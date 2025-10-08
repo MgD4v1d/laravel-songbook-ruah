@@ -1,0 +1,241 @@
+<template>
+    <Head title="Crear Cancion" />
+
+    <AuthenticatedLayout>
+        <template #header>
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Agregar Nueva Canción
+                </h2>
+                <Link :href="route('admin.songs.index')" 
+                      class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
+                    ← Volver
+                </Link>
+            </div>
+        </template>
+
+        <div class="py-12">
+            <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <form @submit.prevent="submit" class="p-6 space-y-6">
+                        
+                        <!-- Toggle Modo Tecladista -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <label class="flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox"
+                                    v-model="isMusicianMode"
+                                    class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <span class="ml-3 text-lg font-medium text-blue-900">
+                                    🎹 Soy tecladista/músico (mostrar campos técnicos)
+                                </span>
+                            </label>
+                            <p class="text-sm text-blue-700 mt-2 ml-8">
+                                Activa esta opción para agregar información musical: tono, tempo y ritmo
+                            </p>
+                        </div>
+
+                        <!-- Grid para campos básicos -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Título -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Título *
+                                </label>
+                                <input 
+                                    v-model="form.title"
+                                    type="text"
+                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Nombre de la canción"
+                                    required
+                                />
+                                <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">
+                                    {{ form.errors.title }}
+                                </p>
+                            </div>
+    
+                            <!-- Artista -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    Artista *
+                                </label>
+                                <input 
+                                    v-model="form.artist"
+                                    type="text"
+                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    placeholder="Nombre del artista o compositor"
+                                    required
+                                />
+                                <p v-if="form.errors.artist" class="text-red-500 text-sm mt-1">
+                                    {{ form.errors.artist }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Campos de Músico (condicionales) -->
+                        <transition
+                            enter-active-class="transition ease-out duration-300"
+                            enter-from-class="transform opacity-0 scale-95"
+                            enter-to-class="transform opacity-100 scale-100"
+                            leave-active-class="transition ease-in duration-200"
+                            leave-from-class="transform opacity-100 scale-100"
+                            leave-to-class="transform opacity-0 scale-95"
+                        >
+                            <div v-if="isMusicianMode" class="space-y-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+                                    🎼 Información Musical
+                                </h3>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <!-- Tono -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            🎹 Tono (Key)
+                                        </label>
+                                        
+                                        <input
+                                            v-model="form.key"
+                                            type="text"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Tono de la canción"
+                                        />
+                                        <p v-if="form.errors.key" class="text-red-500 text-sm mt-1">
+                                            {{ form.errors.key }}
+                                        </p>
+                                    </div>
+    
+                                    <!-- Tempo -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ⏱️ Tempo (BPM)
+                                        </label>
+                                        <input 
+                                            v-model.number="form.tempo"
+                                            type="number"
+                                            min="40"
+                                            max="240"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Ej: 120"
+                                        />
+                                        <p class="text-gray-500 text-sm mt-1">
+                                            Velocidad en pulsaciones por minuto (20-240 BPM)
+                                        </p>
+                                        <p v-if="form.errors.tempo" class="text-red-500 text-sm mt-1">
+                                            {{ form.errors.tempo }}
+                                        </p>
+                                    </div>
+    
+                                    <!-- Ritmo -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            🥁 Ritmo / Género
+                                        </label>
+                                        <input
+                                            v-model="form.rhythm"
+                                            type="text"
+                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                            placeholder="Ritmo/Estilo de la canción"
+                                        />
+                                        <p v-if="form.errors.rhythm" class="text-red-500 text-sm mt-1">
+                                            {{ form.errors.rhythm }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </transition>
+
+                        <!-- Editor de Letras con Toast UI -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                📝 Letras de la Canción *
+                            </label>
+                            
+                            <MarkdownEditor 
+                                v-model="form.lyrics"
+                                placeholder="Escribe las letras aquí..."
+                                height="500px"
+                            />
+                            
+                            <div class="mt-2 bg-blue-50 border border-blue-200 rounded p-3">
+                                <p class="text-sm text-blue-800">
+                                    💡 <strong>Tip para músicos:</strong> Usa <strong>**negritas**</strong> para marcar acordes. 
+                                    Ejemplo: <code>**Am** Hola que tal **F** como estas</code>
+                                </p>
+                            </div>
+                            
+                            <p v-if="form.errors.lyrics" class="text-red-500 text-sm mt-1">
+                                {{ form.errors.lyrics }}
+                            </p>
+                        </div>
+
+                        <!-- URL Video -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                🎥 URL de Video (YouTube)
+                            </label>
+                            <input 
+                                v-model="form.video_url"
+                                type="url"
+                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="https://www.youtube.com/watch?v=..."
+                            />
+                            <p v-if="form.errors.video_url" class="text-red-500 text-sm mt-1">
+                                {{ form.errors.video_url }}
+                            </p>
+                        </div>
+
+                        <!-- Botones -->
+                        <div class="flex justify-end gap-3">
+                            <Link 
+                                :href="route('admin.songs.index')"
+                                class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                                Cancelar
+                            </Link>
+                            <button 
+                                type="submit" 
+                                :disabled="form.processing"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+                                <span v-if="form.processing">Guardando...</span>
+                                <span v-else>💾 Guardar Canción</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+    </AuthenticatedLayout>
+</template>
+
+
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import MarkdownEditor from '@/Components/MarkdownEditor.vue'; // Importar
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
+
+const form = useForm({
+    title: '',
+    artist: '',
+    lyrics: '',
+    key: '',
+    rhythm: '',
+    tempo: null,
+    video_url: ''
+});
+
+const isMusicianMode = ref(false);
+
+
+const submit = () => {
+    if(!isMusicianMode.value){
+        form.key = '',
+        form.tempo = null,
+        form.rhythm = ''
+    }
+
+    form.post(route('admin.songs.store'));
+}
+
+</script>
