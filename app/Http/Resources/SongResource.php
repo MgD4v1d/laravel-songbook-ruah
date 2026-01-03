@@ -22,7 +22,7 @@ class SongResource extends JsonResource
             'key' => $this->key,
             'rhythm' => $this->rhythm,
             'tempo' => $this->tempo,
-            'video_url' => $this->video_url,
+            'videoUrl' => $this->video_url,
             'createdAt' => $this->created_at->toISOString(),
             'updatedAt' => $this->updated_at->toISOString(),
         ];

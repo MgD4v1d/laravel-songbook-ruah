@@ -35,12 +35,13 @@ class Song extends Model
 
     public function scopeSearch(Builder $query, string $search): void
     {
-        $query->whereRaw(
-            "MATCH(title, artist, lyrics) AGAINST(? IN BOOLEAN MODE)",
-            [$search]
-        )
-        ->orWhere('title', 'LIKE', "%{$search}%")
-        ->orWhere('artist', 'LIKE', "%{$search}%");
+        $searchTerm = '%' .$search . '%';
+
+        $query->where(function($q) use ($searchTerm){
+            $q->where('title', 'LIKE', $searchTerm)
+              ->orWhere('artist', 'LIKE', $searchTerm)
+              ->orWhere('lyrics', 'LIKE', $searchTerm);
+        });
     }
 
     /**
@@ -51,6 +52,7 @@ class Song extends Model
     {
         $query->where('key', $key);
     }
+
 
     /**
      * Scope para ordenar alfabéticamente

@@ -19,6 +19,7 @@ class SongMetadataResource extends JsonResource
             'title' => $this->title,
             'artist' => $this->artist,
             'key' => $this->key,
+            'videoUrl' => $this->video_url,
             'createdAt' => $this->created_at->toISOString(),
             'updatedAt' => $this->updated_at->toISOString(),
         ];

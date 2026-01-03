@@ -14,17 +14,26 @@ class AdminSongController extends Controller
     public function index(Request $request) : Response
     {
         $search = $request->input('search');
+        $filter = $request->input('filter', 'all');
+
         $songs = Song::query()
             ->when($search, function($query, $search){
                 $query->search($search);
             })
-            ->alphabetical()
+            ->when($filter === 'recent', function($query){
+                $query->orderBy('created_at', 'desc');
+            }, function($query){
+                $query->alphabetical();
+            })
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('Admin/Songs/Index', [
             'songs' => $songs,
-            'filters' => ['search' => $search]
+            'filters' => [
+                'search' => $search,
+                'filter' => $filter
+            ]
         ]);
     }
 
@@ -54,10 +63,10 @@ class AdminSongController extends Controller
 
         $validated['lyrics'] = str_replace("\r\n", "\n", $validated['lyrics']);
 
-        Song::create($validated);
+        $song = Song::create($validated);
 
         return redirect()->route('admin.songs.index')
-            ->with('success', 'Canción creada exitosamente');
+            ->with('success', "Canción '{$song->title}' creada exitosamente");
     }
 
     public function show(Song $song): Response
@@ -90,24 +99,25 @@ class AdminSongController extends Controller
             'lyrics.required' => 'La letra es obligatoria'
         ]);
 
-        Log::info('Lyrics recibidas:', ['lyrics' => $validated['lyrics']]);
+        //Log::info('Lyrics recibidas:', ['lyrics' => $validated['lyrics']]);
 
-        $validated['lyrics'] = str_replace("\r\n", "\n", $validated['lyrics']);
-
+        // $validated['lyrics'] = str_replace("\r\n", "\n", $validated['lyrics']);
+        //$validated['lyrics'] = preg_replace("/\\\\r\\\\n|\\\\n|\\\\r/", "\n", $validated['lyrics']);
 
         $song->update($validated);
 
         return redirect()->route('admin.songs.index')
-            ->with('success', 'Cancion actualizada exitosamente');
+            ->with('success', "Canción '{$song->title}' actualizada exitosamente");
     }
 
 
     public function destroy(Song $song)
     {
+        $title = $song->title;
         $song->delete();
         
         return redirect()->route('admin.songs.index')
-            ->with('success', 'Canción eliminada exitosamente');
+            ->with('success', "🗑️ Canción '{$title}' eliminada exitosamente");
     }
 
 

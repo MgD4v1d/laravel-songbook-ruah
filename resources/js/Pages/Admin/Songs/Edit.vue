@@ -1,3 +1,66 @@
+<script setup>
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import MarkdownEditor from '@/Components/MarkdownEditor.vue';
+import {Head,Link, useForm, router} from '@inertiajs/vue3';
+import { ref, onMounted } from 'vue';
+
+
+const {song} = defineProps({
+    song: Object
+});
+
+let lyrics = song.lyrics;
+
+let proccessLyrics = lyrics.replace(/\r/g, "");
+
+
+
+const form = useForm({
+    title: song.title,
+    artist: song.artist,
+    lyrics: proccessLyrics,
+    key: song.key || '',
+    rhythm: song.rhythm || '',
+    tempo: song.tempo || null,
+    video_url: song.video_url || ''
+});
+
+// Detectar si tiene campos de musico
+const isMusicianMode = ref(!!(song.key || song.tempo || song.rhythm));
+const returnUrl = ref(null);
+
+onMounted(()=>{
+    returnUrl.value = localStorage.getItem('songs_return_url');
+});
+
+const submit = () => {
+    if( !isMusicianMode.value){
+        form.key = '';
+        form.rhythm = '';
+        form.tempo = null;
+    }
+
+    form.put(route('admin.songs.update', song.id), {
+        onSuccess: () => {
+            if(returnUrl.value){
+                localStorage.removeItem('songs_return_url');
+                router.visit(returnUrl.value);
+            }
+        }
+    });
+};
+
+const goBack = () => {
+    if (returnUrl.value) {
+        localStorage.removeItem('songs_return_url');
+        router.visit(returnUrl.value);
+    } else {
+        router.visit(route('admin.songs.index'));
+    }
+};
+
+</script>
+
 <template>
     <Head :title="`Editar : ${song.title}`" />
 
@@ -17,10 +80,14 @@
                           class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                         👁️ Ver
                     </Link>
-                    <Link :href="route('admin.songs.index')" 
-                          class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition">
-                        ← Volver
-                    </Link>
+                    <button 
+                        @click="goBack"
+                        class="btn btn-neutral gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </button>
                 </div>
             </div>
         </template>
@@ -183,24 +250,31 @@
                             <button 
                                 type="button"
                                 @click="$inertia.delete(route('admin.songs.destroy', song.id), {
-                                    onBefore: () => confirm('¿Estás seguro de eliminar esta canción?')
+                                    onBefore: () => confirm('¿Estás seguro de eliminar esta canción?'),
+                                    onSuccess: () =>{
+                                        if(returnUrl){
+                                            localStorage.removeItem('songs_return_url');
+                                            router.visit(returnUrl);
+                                        }
+                                    }
                                 })"
                                 class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
                                 🗑️ Eliminar Canción
                             </button>
                             
                             <div class="flex gap-3">
-                                <Link 
-                                    :href="route('admin.songs.index')"
-                                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                                <button 
+                                    type="button"
+                                    @click="goBack"
+                                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700">
                                     Cancelar
-                                </Link>
+                                </button>
                                 <button 
                                     type="submit" 
                                     :disabled="form.processing"
                                     class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
                                     <span v-if="form.processing">Guardando...</span>
-                                    <span v-else">💾 Guardar Cambios</span>
+                                    <span v-else>💾 Guardar Cambios</span>
                                 </button>
                             </div>
                         </div>
@@ -212,40 +286,3 @@
     </AuthenticatedLayout>
 
 </template>
-
-
-<script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import MarkdownEditor from '@/Components/MarkdownEditor.vue';
-import {Head,Link, useForm} from '@inertiajs/vue3';
-import { ref } from 'vue';
-
-
-const {song} = defineProps({
-    song: Object
-});
-
-const form = useForm({
-    title: song.title,
-    artist: song.artist,
-    lyrics: song.lyrics,
-    key: song.key || '',
-    rhythm: song.rhythm || '',
-    tempo: song.tempo || null,
-    video_url: song.video_url || ''
-});
-
-// Detectar si tiene campos de musico
-const isMusicianMode = ref(!!(song.key || song.tempo || song.rhythm));
-
-const submit = () => {
-    if( !isMusicianMode.value){
-        form.key = '';
-        form.rhythm = '';
-        form.tempo = null;
-    }
-
-    form.put(route('admin.songs.update', song.id));
-};
-
-</script>

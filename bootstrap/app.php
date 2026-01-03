@@ -22,6 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(append: [
             \App\Http\Middleware\CorsMiddleware::class,
         ]);
+
+        // Middleware alias
+        $middleware->alias([
+            'api.key' => \App\Http\Middleware\CheckApiKey::class,
+        ]);
         
     })
     ->withExceptions(function (Exceptions $exceptions): void {

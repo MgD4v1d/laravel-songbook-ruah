@@ -43,12 +43,16 @@ const checkApi = async () => {
 onMounted(()=> {
     // Actualiza stats normales cada 15s
     setInterval(()=>{
-        router.reload({ only: ['stats']})
+        router.reload({ 
+            only: ['stats'],
+            preserveScroll: true,
+            preserveState: true
+        })
     }, 15000);
 
     // Verifica estado API cada 5s
     checkApi()
-    setInterval(checkApi, 10000)
+    setInterval(checkApi, 150000)
 });
 
 </script>
@@ -166,8 +170,10 @@ onMounted(()=> {
                             </h2>
                             <div class="space-y-2">
                                 <div class="badge badge-outline">GET /api/songs/metadata</div>
-                                <div class="badge badge-outline">GET /api/songs/{id}</div>
                                 <div class="badge badge-outline">POST /api/songs/batch</div>
+                                <div class="badge badge-outline">GET /api/songs/{id}</div>
+                                <div class="badge badge-outline">GET /api/songs/last-modified</div>
+                                <div class="badge badge-outline">GET /api/songs/stats</div>
                                 <div class="badge badge-outline">GET /api/health</div>
                             </div>
                         </div>
