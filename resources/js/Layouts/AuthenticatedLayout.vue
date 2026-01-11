@@ -43,6 +43,11 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Dashboard
                                 </NavLink>
+                                
+                                <NavLink :href="route('admin.categories.index')" :active="route().current('admin.categories.*')">
+                                    Categorias
+                                </NavLink>
+
                                 <NavLink :href="route('admin.songs.index')" :active="route().current('admin.songs.*')">
                                     Canciones
                                 </NavLink>

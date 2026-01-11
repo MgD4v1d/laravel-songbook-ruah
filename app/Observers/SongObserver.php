@@ -22,6 +22,7 @@ class SongObserver
     {
         $this->clearCache();
         Cache::forget("song:{$song->id}");
+        $this->clearCategoryCaches($song);
     }
 
     /**
@@ -31,6 +32,7 @@ class SongObserver
     {
         $this->clearCache();
         Cache::forget("song:{$song->id}");
+        $this->clearCategoryCaches($song);
     }
 
     /**
@@ -38,9 +40,33 @@ class SongObserver
      */
     private function clearCache(): void
     {
-        Cache::forget('songs:metadata');
-        Cache::forget('songs:recent');
-        Cache::forget('songs:stats');
-        Cache::forget('songs:last_modified');
+
+        $keys = [
+            'songs:metadata',
+            'songs:recent',
+            'songs:stats',
+            'songs:last_modified',
+        ];
+
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
+    }
+
+    /**
+     * Clear category-specific song caches
+     */
+    private function clearCategoryCaches(Song $song): void
+    {
+        // Cargar las categorías de la canción si no están cargadas
+        if (!$song->relationLoaded('categories')) {
+            $song->load('categories:id,slug');
+        }
+
+        // Borrar el cache de metadata por cada categoría asociada
+        foreach ($song->categories as $category) {
+            Cache::forget("songs:metadata:category:{$category->slug}");
+        }
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AdminCategoryController;
 use App\Http\Controllers\Admin\AdminSongController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Song;
@@ -32,8 +33,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     // Rutas de canciones (admin)
     Route::resource('songs', AdminSongController::class);
+    // Rutas de categorías (admin)
+    Route::resource('categories', AdminCategoryController::class);
     
-
+    
     
 });
 

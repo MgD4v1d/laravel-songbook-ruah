@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Song extends Model
 {
@@ -26,6 +27,17 @@ class Song extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
+
+    /**
+     * Relación con categorías
+     */
+    public function categories(): BelongsToMany
+    {
+        return $this->belongsToMany(Category::class)
+                    ->withPivot('order')
+                    ->withTimestamps()
+                    ->orderByPivot('order');
+    }
 
 
     /**
@@ -62,5 +74,24 @@ class Song extends Model
         $query->orderBy('title', 'asc');
     }
 
+    /**
+     * Scope para filtrar por categoría
+     */
+    public function scopeByCategory(Builder $query, $categoryId): void
+    {
+        $query->whereHas('categories', function($q) use ($categoryId) {
+            $q->where('categories.id', $categoryId);
+        });
+    }
+
+    /**
+     * Scope para filtrar por slug de categoría
+     */
+    public function scopeByCategorySlug(Builder $query, string $slug): void
+    {
+        $query->whereHas('categories', function($q) use ($slug) {
+            $q->where('categories.slug', $slug);
+        });
+    }
 
 }
