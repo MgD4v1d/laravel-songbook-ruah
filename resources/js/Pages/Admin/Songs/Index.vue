@@ -296,6 +296,7 @@ const formatDate = (dateString) => {
                                 <thead>
                                     <tr>
                                         <th>Canción</th>
+                                        <th>Categorías</th>
                                         <th>Info Musical</th>
                                         <th>Extras</th>
                                         <th>Fecha</th>
@@ -334,6 +335,30 @@ const formatDate = (dateString) => {
                                                         {{ song.artist }}
                                                     </div>
                                                 </div>
+                                            </div>
+                                        </td>
+
+                                        <!-- Categorías -->
+                                        <td>
+                                            <div class="flex flex-wrap gap-1">
+                                                <div
+                                                    v-if="song.categories && song.categories.length > 0"
+                                                    class="flex flex-wrap gap-1"
+                                                >
+                                                    <span
+                                                        v-for="category in song.categories"
+                                                        :key="category.id"
+                                                        class="badge badge-outline badge-sm"
+                                                    >
+                                                        {{ category.name }}
+                                                    </span>
+                                                </div>
+                                                <span
+                                                    v-else
+                                                    class="text-sm opacity-50"
+                                                >
+                                                    Sin categorías
+                                                </span>
                                             </div>
                                         </td>
 

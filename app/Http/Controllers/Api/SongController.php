@@ -7,6 +7,7 @@ use App\Http\Requests\SongBatchRequest;
 use App\Http\Resources\SongCollection;
 use App\Http\Resources\SongMetadataResource;
 use App\Http\Resources\SongResource;
+use App\Models\Category;
 use App\Models\Song;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -15,12 +16,13 @@ use Illuminate\Support\Facades\Cache;
 class SongController extends Controller
 {
     
-    //* Lista de metada (sin lyrics) para flutter
+    //* Lista de metadata (sin lyrics) para flutter
 
     public function metadata(): JsonResponse
     {
         $songs = Cache::remember('songs:metadata', 3600, function(){
-            return Song::select(['id', 'title', 'artist', 'key', 'video_url','created_at', 'updated_at'])
+            return Song::with('categories:id,name,slug')
+            ->select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
             ->alphabetical()
             ->get();
         });
@@ -31,11 +33,51 @@ class SongController extends Controller
     }
 
 
+    //* Lista de metadata filtrada por categoria (para Flutter)
+    public function metadataByCategory(string $categorySlug): JsonResponse
+    {
+        $data = Cache::remember("songs:metadata:category:{$categorySlug}", 3600, function () use ($categorySlug) {
+            // Verificar que la categoría existe
+            $category = Category::where('slug', $categorySlug)->first();
+
+            if (!$category) {
+                return null;
+            }
+
+            $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url','created_at', 'updated_at'])
+                ->byCategorySlug($categorySlug)
+                ->alphabetical()
+                ->get();
+
+            return [
+                'category' => [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ],
+                'songs' => $songs
+            ];
+        });
+
+        if ($data === null) {
+            return response()->json([
+                'message' => 'Category not found',
+                'slug' => $categorySlug
+            ], 404);
+        }
+
+        return response()->json([
+            'category' => $data['category'],
+            'songs' => SongMetadataResource::collection($data['songs'])
+        ]);
+    }
+
+
     //* Canción completa con lyrics
     public function show(Song $song): SongResource
     {
         $cachedSong = Cache::remember("song:{$song->id}", 3600, function () use ($song) {
-            return $song;
+            return $song->load('categories:id,name,slug');
         });
 
         return new SongResource($cachedSong);
@@ -47,7 +89,9 @@ class SongController extends Controller
 
     public function batch(SongBatchRequest $request): JsonResponse
     {
-        $songs = Song::whereIn('id', $request->validated()['ids'])->get();
+        $songs = Song::with('categories:id,name,slug')
+            ->whereIn('id', $request->validated()['ids'])
+            ->get();
 
         return response()->json(
             new SongCollection(SongResource::collection($songs))

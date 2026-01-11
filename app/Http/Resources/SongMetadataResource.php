@@ -20,6 +20,13 @@ class SongMetadataResource extends JsonResource
             'artist' => $this->artist,
             'key' => $this->key,
             'videoUrl' => $this->video_url,
+            'categories' => $this->categories->map(function ($category) {
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ];
+            }),            
             'createdAt' => $this->created_at->toISOString(),
             'updatedAt' => $this->updated_at->toISOString(),
         ];

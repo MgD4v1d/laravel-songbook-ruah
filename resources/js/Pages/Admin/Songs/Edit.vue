@@ -5,8 +5,9 @@ import {Head,Link, useForm, router} from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 
 
-const {song} = defineProps({
-    song: Object
+const {song, categories} = defineProps({
+    song: Object,
+    categories: Array
 });
 
 let lyrics = song.lyrics;
@@ -22,7 +23,8 @@ const form = useForm({
     key: song.key || '',
     rhythm: song.rhythm || '',
     tempo: song.tempo || null,
-    video_url: song.video_url || ''
+    video_url: song.video_url || '',
+    categories: song.categories ? song.categories.map(c => c.id) : []
 });
 
 // Detectar si tiene campos de musico
@@ -234,7 +236,7 @@ const goBack = () => {
                             <label class="block text-sm font-medium text-gray-700 mb-2">
                                 🎥 URL de Video (YouTube)
                             </label>
-                            <input 
+                            <input
                                 v-model="form.video_url"
                                 type="url"
                                 class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -242,6 +244,39 @@ const goBack = () => {
                             />
                             <p v-if="form.errors.video_url" class="text-red-500 text-sm mt-1">
                                 {{ form.errors.video_url }}
+                            </p>
+                        </div>
+
+                        <!-- Categorías -->
+                        <div class="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
+                            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                </svg>
+                                Categorías (Opcional)
+                            </h3>
+
+                            <div v-if="categories && categories.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <label
+                                    v-for="category in categories"
+                                    :key="category.id"
+                                    class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition">
+                                    <input
+                                        type="checkbox"
+                                        :value="category.id"
+                                        v-model="form.categories"
+                                        class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <span class="text-sm font-medium text-gray-700">{{ category.name }}</span>
+                                </label>
+                            </div>
+
+                            <div v-else class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                <p class="text-blue-700">No hay categorías disponibles. Crea categorías primero.</p>
+                            </div>
+
+                            <p v-if="form.errors.categories" class="text-red-500 text-sm mt-1">
+                                {{ form.errors.categories }}
                             </p>
                         </div>
 

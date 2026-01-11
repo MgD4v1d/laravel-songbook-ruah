@@ -23,6 +23,13 @@ class SongResource extends JsonResource
             'rhythm' => $this->rhythm,
             'tempo' => $this->tempo,
             'videoUrl' => $this->video_url,
+            'categories' => $this->categories->map(function($category){
+                return [
+                    'id' => $category->id,
+                    'name' => $category->name,
+                    'slug' => $category->slug,
+                ];
+            }),
             'createdAt' => $this->created_at->toISOString(),
             'updatedAt' => $this->updated_at->toISOString(),
         ];
