@@ -11,6 +11,7 @@ use App\Models\Category;
 use App\Models\Song;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class SongController extends Controller
@@ -123,19 +124,44 @@ class SongController extends Controller
      * Última modificación
      */
 
-    public function lastModified()
+    // public function lastModified()
+    // {
+    //     $lastModified = Cache::remember('songs:last_modified', 3600, function () {
+    //         return Song::max('updated_at');
+    //     });
+
+    //     if (empty($lastModified)) {
+    //         $lastModified = now();
+    //     }
+
+    //     $lastModifiedDate = Carbon::parse($lastModified)->toRfc7231String();
+
+    //     return response('', 200)->header('Last-Modified', $lastModifiedDate);
+    // }
+
+    public function lastModified(Request $request)
     {
-        $lastModified = Cache::remember('songs:last_modified', 3600, function () {
-            return Song::max('updated_at');
+        $timestamp = Cache::remember('songs:last_modified_ts', 3600, function () {
+            return Song::latest('updated_at')->value('updated_at')?->timestamp ?? now()->timestamp;
         });
 
-        if (empty($lastModified)) {
-            $lastModified = now();
+        $lastModifiedDate = Carbon::createFromTimestamp($timestamp);
+        $ifModifiedSince = $request->header('If-Modified-Since');
+
+        if ($ifModifiedSince) {
+            // Convertimos a timestamp para comparar peras con peras
+            $clientTimestamp = is_numeric($ifModifiedSince) 
+                ? (int)$ifModifiedSince 
+                : Carbon::parse($ifModifiedSince)->timestamp;
+
+            if ($timestamp <= $clientTimestamp) {
+                return response('', 304);
+            }
         }
 
-        $lastModifiedDate = Carbon::parse($lastModified)->toRfc7231String();
-
-        return response('', 200)->header('Last-Modified', $lastModifiedDate);
+        return response()->json(['last_modified' => $timestamp])
+                        ->setLastModified($lastModifiedDate)
+                        ->header('Cache-Control', 'public, max-age=60');
     }
 
     /**

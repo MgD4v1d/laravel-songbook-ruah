@@ -45,7 +45,7 @@ class SongObserver
             'songs:metadata',
             'songs:recent',
             'songs:stats',
-            'songs:last_modified',
+            'songs:last_modified_ts',
         ];
 
 
