@@ -42,7 +42,7 @@ class CategoryObserver
         $keys = [
             'categories:all',
             'categories:stats',
-            'categories:last_modified',
+            'categories:last_modified_ts',
         ];
 
         foreach ($keys as $key) {
