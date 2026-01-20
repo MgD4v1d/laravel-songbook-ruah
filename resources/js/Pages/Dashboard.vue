@@ -20,7 +20,7 @@ const apiStatus = ref({
 
 const checkApi = async () => {
     try{
-        const resp = await fetch('http://localhost:8000/api/health');
+        const resp = await fetch('https://tehila.com.mx/api/health');
         if(!resp.ok) throw new Error('Error en la respuesta');
         const data = await resp.json();
 
