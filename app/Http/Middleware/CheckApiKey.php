@@ -16,11 +16,13 @@ class CheckApiKey
     public function handle(Request $request, Closure $next): Response
     {
         $apiKey = $request->header('X-API-KEY');
+        $validKey = config('app.api_key');
 
-        if (!$apiKey || $apiKey !== config('app.api_key')){
+        // Usamos hash_equals para una comparación segura
+        if (!$apiKey || !hash_equals($validKey, $apiKey)) {
             return response()->json([
                 'status' => 'ERROR',
-                'message' => 'Unaunthorized - Invalid API Key',
+                'message' => 'Unauthorized - Invalid API Key', // Corregido el typo
             ], 401);
         }
 
