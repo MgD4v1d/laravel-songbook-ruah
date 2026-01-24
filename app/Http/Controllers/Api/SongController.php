@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\SongBatchRequest;
+use App\Http\Requests\SongRequest;
 use App\Http\Resources\SongCollection;
 use App\Http\Resources\SongMetadataResource;
 use App\Http\Resources\SongResource;
@@ -215,4 +216,107 @@ class SongController extends Controller
 
 
 
+    /**
+     *  List Songs
+     */
+
+    public function songs(Request $request)
+    {
+        $perPage = $request->input('per_page', 15);
+        $search = $request->input('search');
+        $sortBy = $request->input('sort_by', 'title');
+        $order = $request->input('order', 'asc');
+
+        $query = Song::query()->with('categories:id,name,slug');
+
+        if ($search) {
+            $query->search($search);
+        }
+
+        $query->orderBy($sortBy, $order);
+
+        $songs = $query->paginate($perPage);
+
+        return SongResource::collection($songs);
+    }
+
+
+    /**
+     *  Add Song
+     */
+    public function store(SongRequest $request): JsonResponse
+    {
+        $song = Song::create($request->validated());
+
+        if ($request->has('categories')) {
+            $song->categories()->sync($request->categories);
+        }
+
+        // Invalidar cachés relacionados
+        Cache::forget('songs:metadata');
+        Cache::forget('songs:recent');
+        Cache::forget('songs:stats');
+        Cache::forget('songs:last_modified_ts');
+
+        return response()->json(
+            new SongResource($song->load('categories:id,name,slug')),
+            201
+        );
+    }
+
+    /**
+     *  Update Song
+     */
+    public function update(SongRequest $request, Song $song): JsonResponse
+    {
+        $song->update($request->validated());
+
+        if ($request->has('categories')) {
+            $song->categories()->sync($request->categories);
+        }
+
+        // Invalidar cachés relacionados
+        Cache::forget('songs:metadata');
+        Cache::forget('songs:recent');
+        Cache::forget('songs:stats');
+        Cache::forget('songs:last_modified_ts');
+        Cache::forget("song:{$song->id}");
+
+        foreach ($song->categories as $category) {
+            Cache::forget("songs:metadata:category:{$category->slug}");
+        }
+
+        return response()->json(
+            new SongResource($song->load('categories:id,name,slug'))
+        );
+    }
+
+    /**
+     *  Delete Song
+     */
+    public function destroy(Song $song): JsonResponse
+    {
+        $categorySlugs = $song->categories->pluck('slug');
+
+        $song->categories()->detach();
+        $song->delete();
+
+        // Invalidar cachés relacionados
+        Cache::forget('songs:metadata');
+        Cache::forget('songs:recent');
+        Cache::forget('songs:stats');
+        Cache::forget('songs:last_modified_ts');
+        Cache::forget("song:{$song->id}");
+
+        foreach ($categorySlugs as $slug) {
+            Cache::forget("songs:metadata:category:{$slug}");
+        }
+
+        return response()->json([
+            'message' => 'Song deleted successfully'
+        ]);
+    }
+
+
+    
 }

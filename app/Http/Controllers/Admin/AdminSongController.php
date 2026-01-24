@@ -16,11 +16,17 @@ class AdminSongController extends Controller
     {
         $search = $request->input('search');
         $filter = $request->input('filter', 'all');
+        $categoryId = $request->input('category');
 
         $songs = Song::query()
             ->with('categories:id,name')
             ->when($search, function($query, $search){
                 $query->search($search);
+            })
+            ->when($categoryId, function($query, $categoryId){
+                $query->whereHas('categories', function($q) use ($categoryId){
+                    $q->where('categories.id', $categoryId);
+                });
             })
             ->when($filter === 'recent', function($query){
                 $query->orderBy('created_at', 'desc');
@@ -30,11 +36,15 @@ class AdminSongController extends Controller
             ->paginate(10)
             ->withQueryString();
 
+        $categories = Category::ordered()->get(['id', 'name']);
+
         return Inertia::render('Admin/Songs/Index', [
             'songs' => $songs,
+            'categories' => $categories,
             'filters' => [
                 'search' => $search,
-                'filter' => $filter
+                'filter' => $filter,
+                'category' => $categoryId
             ]
         ]);
     }
@@ -69,7 +79,8 @@ class AdminSongController extends Controller
 
         Log::info('Lyrics recibidas:', ['lyrics' => $validated['lyrics']]);
 
-        $validated['lyrics'] = str_replace("\r\n", "\n", $validated['lyrics']);
+        // Clean HTML input using Purifier
+        $validated['lyrics'] = clean($validated['lyrics']);
 
         $categories = $validated['categories'] ?? [];
         unset($validated['categories']);
@@ -122,8 +133,8 @@ class AdminSongController extends Controller
 
         //Log::info('Lyrics recibidas:', ['lyrics' => $validated['lyrics']]);
 
-        // $validated['lyrics'] = str_replace("\r\n", "\n", $validated['lyrics']);
-        //$validated['lyrics'] = preg_replace("/\\\\r\\\\n|\\\\n|\\\\r/", "\n", $validated['lyrics']);
+        // Clean HTML input using Purifier
+        $validated['lyrics'] = clean($validated['lyrics']);
 
         $categories = $validated['categories'] ?? [];
         unset($validated['categories']);
