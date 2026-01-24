@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import MarkdownEditor from '@/Components/MarkdownEditor.vue';
+import TipTapEditor from '@/Components/TipTapEditor.vue';
 import {Head,Link, useForm, router} from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
 
@@ -221,7 +221,7 @@ const goBack = () => {
                                 📝 Letras de la Canción *
                             </label>
                             
-                            <MarkdownEditor 
+                            <TipTapEditor 
                                 v-model="form.lyrics"
                                 height="500px"
                             />

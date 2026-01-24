@@ -6,10 +6,12 @@ import { ref, watch } from "vue";
 const props = defineProps({
     songs: Object,
     filters: Object,
+    categories: Array,
 });
 
 const search = ref(props.filters.search || "");
 const filter = ref(props.filters.filter || "all");
+const category = ref(props.filters.category || "");
 
 const searchSongs = () => {
     router.get(
@@ -17,6 +19,7 @@ const searchSongs = () => {
         {
             search: search.value,
             filter: filter.value,
+            category: category.value,
         },
         {
             preserveState: true,
@@ -28,6 +31,7 @@ const searchSongs = () => {
 const clearSearch = () => {
     search.value = "";
     filter.value = "all";
+    category.value = "";
     router.get("/admin/songs");
 };
 
@@ -46,6 +50,10 @@ watch(search, () => {
 });
 
 watch(filter, () => {
+    searchSongs();
+});
+
+watch(category, () => {
     searchSongs();
 });
 
@@ -139,8 +147,8 @@ const formatDate = (dateString) => {
                 <div class="card bg-base-100 shadow-xl mb-6">
                     <div class="card-body p-4">
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-                            <!-- Buscador (8 columnas en desktop) -->
-                            <div class="lg:col-span-8">
+                            <!-- Buscador (6 columnas en desktop) -->
+                            <div class="lg:col-span-6">
                                 <div class="join w-full">
                                     <input
                                         v-model="search"
@@ -175,8 +183,26 @@ const formatDate = (dateString) => {
                                 </div>
                             </div>
 
-                            <!-- Filtro (3 columnas en desktop)-->
-                            <div class="lg:col-span-3">
+                            <!-- Filtro por categoría (2 columnas en desktop)-->
+                            <div class="lg:col-span-2">
+                                <select
+                                    name="category"
+                                    class="select select-bordered w-full"
+                                    v-model="category"
+                                >
+                                    <option value="">Todas las categorías</option>
+                                    <option
+                                        v-for="cat in categories"
+                                        :key="cat.id"
+                                        :value="cat.id"
+                                    >
+                                        {{ cat.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro orden (2 columnas en desktop)-->
+                            <div class="lg:col-span-2">
                                 <select
                                     name="filters"
                                     class="select select-bordered w-full"
@@ -188,11 +214,11 @@ const formatDate = (dateString) => {
                             </div>
 
                             <!-- Botón limpiar (1 columna)-->
-                            <div class="lg:col-span-1">
+                            <div class="lg:col-span-2 flex justify-end">
                                 <button
-                                    v-if="search || filter !== 'all'"
+                                    v-if="search || filter !== 'all' || category"
                                     @click="clearSearch"
-                                    class="btn btn-ghost w-full"
+                                    class="btn btn-ghost"
                                     title="Limpiar filtros"
                                 >
                                     <svg
@@ -209,6 +235,7 @@ const formatDate = (dateString) => {
                                             d="M6 18L18 6M6 6l12 12"
                                         />
                                     </svg>
+                                    <span class="hidden sm:inline">Limpiar</span>
                                 </button>
                             </div>
                         </div>
@@ -216,7 +243,7 @@ const formatDate = (dateString) => {
                 </div>
 
                 <!-- Alert si hay búsqueda activa -->
-                <div v-if="search" class="alert alert-info shadow-lg mb-6">
+                <div v-if="search || category" class="alert alert-info shadow-lg mb-6">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -231,9 +258,11 @@ const formatDate = (dateString) => {
                         ></path>
                     </svg>
                     <div>
-                        <div class="font-bold">Búsqueda activa</div>
+                        <div class="font-bold">Filtros activos</div>
                         <div class="text-xs">
-                            Mostrando resultados para "{{ search }}"
+                            <span v-if="search">Búsqueda: "{{ search }}"</span>
+                            <span v-if="search && category"> | </span>
+                            <span v-if="category">Categoría: {{ categories.find(c => c.id == category)?.name }}</span>
                         </div>
                     </div>
                 </div>

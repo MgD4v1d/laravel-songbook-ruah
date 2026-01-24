@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import MarkdownEditor from '@/Components/MarkdownEditor.vue'; // Importar
+import TipTapEditor from '@/Components/TipTapEditor.vue'; // Importar
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
@@ -236,7 +236,7 @@ const submit = () => {
                                 
                                 <div class="divider"></div>
                                 
-                                <MarkdownEditor 
+                                <TipTapEditor 
                                     v-model="form.lyrics"
                                     placeholder="Escribe las letras aquí..."
                                     height="500px"

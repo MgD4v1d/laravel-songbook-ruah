@@ -107,4 +107,20 @@ class CategoryController extends Controller
             ], 500);
         }
     }
+
+
+    /**
+     * Lista de categorías para admin (todos los campos)
+     */
+    public function adminIndex(): JsonResponse
+    {
+        $categories = Category::ordered()
+            ->withCount('songs')
+            ->get();
+
+        return response()->json([
+            'data' => $categories,
+        ]);
+    }
+    
 }
