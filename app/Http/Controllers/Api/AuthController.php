@@ -11,12 +11,19 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email'    => 'required|email',
+            'email' => 'required|email',
             'password' => 'required',
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El correo electrónico debe ser válido.',
+            'password.required' => 'La contraseña es obligatoria.',
         ]);
 
-        if (!$token = auth('api')->attempt($credentials)) {
-            return response()->json(['error' => 'Unauthorized'], 401);
+        if (! $token = auth('api')->attempt($credentials)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Credenciales incorrectas.',
+            ], 401);
         }
 
         return $this->respondWithToken($token);
@@ -30,6 +37,7 @@ class AuthController extends Controller
     public function logout(): JsonResponse
     {
         auth('api')->logout();
+
         return response()->json(['message' => 'Successfully logged out']);
     }
 
@@ -42,8 +50,8 @@ class AuthController extends Controller
     {
         return response()->json([
             'access_token' => $token,
-            'token_type'   => 'bearer',
-            'expires_in'   => auth('api')->factory()->getTTL() * 60
+            'token_type' => 'bearer',
+            'expires_in' => auth('api')->factory()->getTTL() * 60,
         ]);
     }
 }

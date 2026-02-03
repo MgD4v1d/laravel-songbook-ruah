@@ -1,8 +1,12 @@
 <?php
 
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -32,5 +36,47 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(function ($request){
             return $request->is('api/*');
+        });
+
+        // Errores de validación (422)
+        $exceptions->render(function (ValidationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+        });
+
+        // Modelo no encontrado (404)
+        $exceptions->render(function (ModelNotFoundException $e, $request) {
+            if ($request->is('api/*')) {
+                $model = class_basename($e->getModel());
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se encontró el recurso {$model}.",
+                ], 404);
+            }
+        });
+
+        // Ruta no encontrada (404)
+        $exceptions->render(function (NotFoundHttpException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ruta no encontrada.',
+                ], 404);
+            }
+        });
+
+        // No autenticado (401)
+        $exceptions->render(function (AuthenticationException $e, $request) {
+            if ($request->is('api/*')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No autenticado.',
+                ], 401);
+            }
         });
     })->create();
