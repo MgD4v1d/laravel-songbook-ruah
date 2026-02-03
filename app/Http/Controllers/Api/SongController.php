@@ -17,16 +17,15 @@ use Illuminate\Support\Facades\Cache;
 
 class SongController extends Controller
 {
-    
-    //* Lista de metadata (sin lyrics) para flutter
+    // * Lista de metadata (sin lyrics) para flutter
 
     public function metadata(): JsonResponse
     {
-        $songs = Cache::remember('songs:metadata', 3600, function(){
+        $songs = Cache::remember('songs:metadata', 3600, function () {
             return Song::with('categories:id,name,slug')
-            ->select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
-            ->alphabetical()
-            ->get();
+                ->select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+                ->alphabetical()
+                ->get();
         });
 
         return response()->json(
@@ -34,19 +33,18 @@ class SongController extends Controller
         );
     }
 
-
-    //* Lista de metadata filtrada por categoria (para Flutter)
+    // * Lista de metadata filtrada por categoria (para Flutter)
     public function metadataByCategory(string $categorySlug): JsonResponse
     {
         $data = Cache::remember("songs:metadata:category:{$categorySlug}", 3600, function () use ($categorySlug) {
             // Verificar que la categoría existe
             $category = Category::where('slug', $categorySlug)->first();
 
-            if (!$category) {
+            if (! $category) {
                 return null;
             }
 
-            $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url','created_at', 'updated_at'])
+            $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
                 ->byCategorySlug($categorySlug)
                 ->alphabetical()
                 ->get();
@@ -57,25 +55,24 @@ class SongController extends Controller
                     'name' => $category->name,
                     'slug' => $category->slug,
                 ],
-                'songs' => $songs
+                'songs' => $songs,
             ];
         });
 
         if ($data === null) {
             return response()->json([
                 'message' => 'Category not found',
-                'slug' => $categorySlug
+                'slug' => $categorySlug,
             ], 404);
         }
 
         return response()->json([
             'category' => $data['category'],
-            'songs' => SongMetadataResource::collection($data['songs'])
+            'songs' => SongMetadataResource::collection($data['songs']),
         ]);
     }
 
-
-    //* Canción completa con lyrics
+    // * Canción completa con lyrics
     public function show(Song $song): SongResource
     {
         $cachedSong = Cache::remember("song:{$song->id}", 3600, function () use ($song) {
@@ -88,7 +85,6 @@ class SongController extends Controller
     /**
      *  Múltiples canciones (batch) - Usando Form Request
      */
-
     public function batch(SongBatchRequest $request): JsonResponse
     {
         $songs = Song::with('categories:id,name,slug')
@@ -100,26 +96,22 @@ class SongController extends Controller
         );
     }
 
-
     /**
      *  Ultimas Canciones Agregadas
      */
-
-
-     public function recent(): JsonResponse
-     {
-        $songs = Cache::remember('songs:recent', 3600, function(){
-            return Song::select(['id', 'title', 'artist', 'key', 'video_url','created_at', 'updated_at'])
-            ->orderBy('created_at', 'desc')
-            ->limit(5)
-            ->get();
+    public function recent(): JsonResponse
+    {
+        $songs = Cache::remember('songs:recent', 3600, function () {
+            return Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
         });
 
         return response()->json(
             SongMetadataResource::collection($songs)
         );
-     }
-
+    }
 
     /**
      * Última modificación
@@ -151,8 +143,8 @@ class SongController extends Controller
 
         if ($ifModifiedSince) {
             // Convertimos a timestamp para comparar peras con peras
-            $clientTimestamp = is_numeric($ifModifiedSince) 
-                ? (int)$ifModifiedSince 
+            $clientTimestamp = is_numeric($ifModifiedSince)
+                ? (int) $ifModifiedSince
                 : Carbon::parse($ifModifiedSince)->timestamp;
 
             if ($timestamp <= $clientTimestamp) {
@@ -161,16 +153,15 @@ class SongController extends Controller
         }
 
         return response()->json(['last_modified' => $timestamp])
-                        ->setLastModified($lastModifiedDate)
-                        ->header('Cache-Control', 'public, max-age=60');
+            ->setLastModified($lastModifiedDate)
+            ->header('Cache-Control', 'public, max-age=60');
     }
 
     /**
      * Song Stats
      */
-
-     public function stats(): JsonResponse
-     {
+    public function stats(): JsonResponse
+    {
         try {
             $stats = Cache::remember('songs:stats', 3600, function () {
                 return [
@@ -189,8 +180,7 @@ class SongController extends Controller
                 'timestamp' => now()->toISOString(),
             ], 500);
         }
-     }
-
+    }
 
     /**
      * Health check
@@ -214,12 +204,9 @@ class SongController extends Controller
         }
     }
 
-
-
     /**
      *  List Songs
      */
-
     public function songs(Request $request)
     {
         $perPage = $request->input('per_page', 15);
@@ -240,23 +227,25 @@ class SongController extends Controller
         return SongResource::collection($songs);
     }
 
-
     /**
      *  Add Song
      */
     public function store(SongRequest $request): JsonResponse
     {
-        $song = Song::create($request->validated());
+        $data = $request->validated();
+        if (isset($data['lyrics'])) {
+            // $data['lyrics'] = $this->normalizeLyricsHtml($data['lyrics']);
+            $data['lyrics'] = clean($data['lyrics']);
+        }
+
+        $song = Song::create($data);
 
         if ($request->has('categories')) {
             $song->categories()->sync($request->categories);
         }
 
-        // Invalidar cachés relacionados
-        Cache::forget('songs:metadata');
-        Cache::forget('songs:recent');
-        Cache::forget('songs:stats');
-        Cache::forget('songs:last_modified_ts');
+        // Tocar el modelo para actualizar updated_at y disparar el observer
+        $song->touch();
 
         return response()->json(
             new SongResource($song->load('categories:id,name,slug')),
@@ -269,22 +258,21 @@ class SongController extends Controller
      */
     public function update(SongRequest $request, Song $song): JsonResponse
     {
-        $song->update($request->validated());
+        $data = $request->validated();
+
+        if (isset($data['lyrics'])) {
+            // $data['lyrics'] = $this->normalizeLyricsHtml($data['lyrics']);
+            $data['lyrics'] = clean($data['lyrics']);
+        }
+
+        $song->update($data);
 
         if ($request->has('categories')) {
             $song->categories()->sync($request->categories);
         }
 
         // Invalidar cachés relacionados
-        Cache::forget('songs:metadata');
-        Cache::forget('songs:recent');
-        Cache::forget('songs:stats');
-        Cache::forget('songs:last_modified_ts');
-        Cache::forget("song:{$song->id}");
-
-        foreach ($song->categories as $category) {
-            Cache::forget("songs:metadata:category:{$category->slug}");
-        }
+        $song->touch();
 
         return response()->json(
             new SongResource($song->load('categories:id,name,slug'))
@@ -296,27 +284,45 @@ class SongController extends Controller
      */
     public function destroy(Song $song): JsonResponse
     {
-        $categorySlugs = $song->categories->pluck('slug');
 
-        $song->categories()->detach();
         $song->delete();
 
-        // Invalidar cachés relacionados
-        Cache::forget('songs:metadata');
-        Cache::forget('songs:recent');
-        Cache::forget('songs:stats');
-        Cache::forget('songs:last_modified_ts');
-        Cache::forget("song:{$song->id}");
-
-        foreach ($categorySlugs as $slug) {
-            Cache::forget("songs:metadata:category:{$slug}");
-        }
-
         return response()->json([
-            'message' => 'Song deleted successfully'
+            'message' => 'Song deleted successfully',
         ]);
     }
 
+    /**
+     * Normalizar letras
+     */
+    private function normalizeLyricsHtml(string $html): string
+    {
+        // 1. Extraer contenido de todos los <p>
+        preg_match_all('/<p[^>]*>(.*?)<\/p>/s', $html, $matches);
 
-    
+        if (empty($matches[1])) {
+            return $html;
+        }
+
+        // 2. Juntar todo el contenido con <br/>
+        $parts = array_filter(array_map('trim', $matches[1]), fn ($s) => $s !== '');
+        $combined = implode('<br/>', $parts);
+
+        // 3. Normalizar variantes de <br> a <br/>
+        $normalized = preg_replace('/<br\s*\/?>/', '<br/>', $combined);
+
+        // 4. Separar estrofas por doble <br/> o mas
+        $stanzas = preg_split('/(<br\/>){2,}/', $normalized);
+
+        // 5. Limpiar cada estrofa
+        $stanzas = array_filter(array_map(function ($s) {
+            $s = trim($s);
+            $s = preg_replace('/^(<br\/>)+/', '', $s);
+            $s = preg_replace('/(<br\/>)+$/', '', $s);
+
+            return trim($s);
+        }, $stanzas), fn ($s) => $s !== '' && $s !== '<br/>');
+
+        return implode("\n\n", array_map(fn ($s) => "<p>{$s}</p>", $stanzas));
+    }
 }
