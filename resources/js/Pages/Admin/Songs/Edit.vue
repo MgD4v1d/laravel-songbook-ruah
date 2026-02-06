@@ -1,25 +1,18 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import TipTapEditor from '@/Components/TipTapEditor.vue';
-import {Head,Link, useForm, router} from '@inertiajs/vue3';
+import LyricsBlocksEditor from '@/Components/LyricsBlocksEditor.vue';
+import {Head, Link, useForm, router} from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
-
 
 const {song, categories} = defineProps({
     song: Object,
     categories: Array
 });
 
-let lyrics = song.lyrics;
-
-let proccessLyrics = lyrics.replace(/\r/g, "");
-
-
-
 const form = useForm({
     title: song.title,
     artist: song.artist,
-    lyrics: proccessLyrics,
+    lyrics_blocks: song.lyrics_blocks || [],
     key: song.key || '',
     rhythm: song.rhythm || '',
     tempo: song.tempo || null,
@@ -27,16 +20,16 @@ const form = useForm({
     categories: song.categories ? song.categories.map(c => c.id) : []
 });
 
-// Detectar si tiene campos de musico
+// Detectar si tiene campos de músico
 const isMusicianMode = ref(!!(song.key || song.tempo || song.rhythm));
 const returnUrl = ref(null);
 
-onMounted(()=>{
+onMounted(() => {
     returnUrl.value = localStorage.getItem('songs_return_url');
 });
 
 const submit = () => {
-    if( !isMusicianMode.value){
+    if (!isMusicianMode.value) {
         form.key = '';
         form.rhythm = '';
         form.tempo = null;
@@ -44,12 +37,25 @@ const submit = () => {
 
     form.put(route('admin.songs.update', song.id), {
         onSuccess: () => {
-            if(returnUrl.value){
+            if (returnUrl.value) {
                 localStorage.removeItem('songs_return_url');
                 router.visit(returnUrl.value);
             }
         }
     });
+};
+
+const deleteSong = () => {
+    if (confirm('¿Estás seguro de eliminar esta canción?')) {
+        router.delete(route('admin.songs.destroy', song.id), {
+            onSuccess: () => {
+                if (returnUrl.value) {
+                    localStorage.removeItem('songs_return_url');
+                    router.visit(returnUrl.value);
+                }
+            }
+        });
+    }
 };
 
 const goBack = () => {
@@ -60,7 +66,6 @@ const goBack = () => {
         router.visit(route('admin.songs.index'));
     }
 };
-
 </script>
 
 <template>
@@ -71,7 +76,7 @@ const goBack = () => {
             <div class="flex justify-between items-center">
                 <div>
                     <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                        Editar Canción
+                        <i class="ri-edit-line"></i> Editar Canción
                     </h2>
                     <p class="text-sm text-gray-600 mt-1">
                         {{ song.title }} - {{ song.artist }}
@@ -79,77 +84,114 @@ const goBack = () => {
                 </div>
                 <div class="flex gap-2">
                     <Link :href="route('admin.songs.show', song.id)" 
-                          class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                        👁️ Ver
+                          class="btn btn-success btn-sm gap-2">
+                        <i class="ri-eye-line"></i>
+                        Ver
                     </Link>
                     <button 
                         @click="goBack"
-                        class="btn btn-neutral gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
+                        class="btn btn-ghost btn-sm gap-2">
+                        <i class="ri-arrow-left-long-line"></i>
                         Volver
                     </button>
                 </div>
             </div>
         </template>
 
-
         <div class="py-12">
-            <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
+            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <form @submit.prevent="submit" class="p-6 space-y-6">
                         
                         <!-- Toggle Modo Tecladista -->
-                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                            <label class="flex items-center cursor-pointer">
-                                <input 
-                                    type="checkbox"
-                                    v-model="isMusicianMode"
-                                    class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                />
-                                <span class="ml-3 text-lg font-medium text-blue-900">
-                                    🎹 Soy tecladista/músico (mostrar campos técnicos)
-                                </span>
-                            </label>
-                        </div>
-
-                        <!-- Grid para campos básicos -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Título -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Título *
-                                </label>
-                                <input 
-                                    v-model="form.title"
-                                    type="text"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    required
-                                />
-                                <p v-if="form.errors.title" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.title }}
-                                </p>
-                            </div>
-
-                            <!-- Artista -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    Artista *
-                                </label>
-                                <input 
-                                    v-model="form.artist"
-                                    type="text"
-                                    class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                    required
-                                />
-                                <p v-if="form.errors.artist" class="text-red-500 text-sm mt-1">
-                                    {{ form.errors.artist }}
-                                </p>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body p-4">
+                                <div class="flex items-center gap-4">
+                                    <input 
+                                        type="checkbox"
+                                        v-model="isMusicianMode"
+                                        class="checkbox checkbox-lg"
+                                        name="toggle"
+                                    />
+                                    
+                                    <div>
+                                        <span class="flex label-text text-lg font-bold text-primary-content">
+                                            <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                            <path
+                                                fill-rule="evenodd"
+                                                clip-rule="evenodd"
+                                                d="M22 21C23.1046 21 24 20.1046 24 19V5C24 3.89543 23.1046 3 22 3H3C1.89543 3 1 3.89543 1 5V19C1 20.1046 1.89543 21 3 21H22ZM11 5H8.98486V13H7.98511V19H12V13H11V5ZM18.0151 19H22V5H19.0151V13H18.0151V19ZM17.0151 13H16.0151V5H14V13H13V19H17.0151V13ZM6.98511 19V13H5.98486V5H3L3 19H6.98511Z"
+                                                fill="currentColor"
+                                            />
+                                            </svg> &nbsp; Soy tecladista/músico
+                                        </span>
+                                        <p class="text-sm opacity-90">
+                                            Activa para agregar información musical: tono, tempo y ritmo
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Campos de Músico -->
+                        <!-- Información Básica -->
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Información Básica
+                                </h3>
+
+                                <div class="divider"></div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Título -->
+                                    <div class="form-control w-full">
+                                        <label class="label">
+                                            <span class="label-text font-semibold">Título *</span>
+                                        </label>
+                                        <input 
+                                            v-model="form.title"
+                                            type="text"
+                                            placeholder="Nombre de la canción"
+                                            class="input input-bordered w-full"
+                                            :class="{ 'input-error': form.errors.title }"
+                                            required
+                                        />
+                                        <label v-if="form.errors.title" class="label">
+                                            <span class="label-text-alt text-error">{{ form.errors.title }}</span>
+                                        </label>
+                                    </div>
+
+                                    <!-- Artista -->
+                                    <div class="form-control w-full">
+                                        <label class="label">
+                                            <span class="label-text font-semibold">Artista *</span>
+                                        </label>
+                                        <input 
+                                            v-model="form.artist"
+                                            type="text"
+                                            placeholder="Nombre del artista o compositor"
+                                            class="input input-bordered w-full"
+                                            :class="{ 'input-error': form.errors.artist }"
+                                            required
+                                        />
+                                        <label v-if="form.errors.artist" class="label">
+                                            <span class="label-text-alt text-error">{{ form.errors.artist }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos de Músico (condicionales) -->
                         <transition
                             enter-active-class="transition ease-out duration-300"
                             enter-from-class="transform opacity-0 scale-95"
@@ -158,159 +200,212 @@ const goBack = () => {
                             leave-from-class="transform opacity-100 scale-100"
                             leave-to-class="transform opacity-0 scale-95"
                         >
-                            <div v-if="isMusicianMode" class="space-y-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <h3 class="text-lg font-semibold text-gray-900">
-                                    🎼 Información Musical
-                                </h3>
+                            <div v-if="isMusicianMode" class="card bg-base-100 shadow-xl border-2 border-primary">
+                                <div class="card-body">
+                                    <h3 class="card-title">
+                                        🎼 Información Musical
+                                    </h3>
 
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <!-- Tono -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            🎹 Tono (Key)
-                                        </label>                                        
-                                        <input
-                                            v-model="form.key"
-                                            type="text"
-                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Tono de la canción"
-                                        />
+                                    <div class="divider"></div>
 
-                                         <p v-if="form.errors.key" class="text-red-500 text-sm mt-1">
-                                            {{ form.errors.key }}
-                                        </p>
-                                    </div>
-
-                                    <!-- Tempo -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            ⏱️ Tempo (BPM)
-                                        </label>
-                                        <input 
-                                            v-model.number="form.tempo"
-                                            type="number"
-                                            min="40"
-                                            max="240"
-                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="120"
-                                        />
-                                    </div>
-
-                                    <!-- Ritmo -->
-                                    <div>
-                                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            🥁 Ritmo
-                                        </label>
-                                         <input
-                                            v-model="form.rhythm"
-                                            type="text"
-                                            class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                            placeholder="Ritmo/Estilo de la canción"
-                                        />
-                                        <p v-if="form.errors.rhythm" class="text-red-500 text-sm mt-1">
-                                            {{ form.errors.rhythm }}
-                                        </p>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                        <!-- Tono -->
+                                        <div class="form-control w-full">
+                                            <label class="label">
+                                                <span class="label-text font-semibold">🎹 Tono (Key)</span>
+                                            </label>
+                                            <input
+                                                v-model="form.key"
+                                                type="text"
+                                                class="input input-bordered w-full"
+                                                placeholder="Tono de la canción"
+                                            />
+                                            <label class="label">
+                                                <span class="label-text-alt">Tonalidad musical</span>
+                                            </label>
+                                            <p v-if="form.errors.key" class="text-red-500 text-sm mt-1">
+                                                {{ form.errors.key }}
+                                            </p>
+                                        </div>
+        
+                                        <!-- Tempo -->
+                                        <div class="form-control w-full">
+                                            <label class="label">
+                                                <span class="label-text font-semibold">⏱️ Tempo (BPM)</span>
+                                            </label>
+                                            <input 
+                                                v-model.number="form.tempo"
+                                                type="number"
+                                                min="40"
+                                                max="240"
+                                                class="input input-bordered w-full"
+                                                placeholder="Ej: 120"
+                                            />
+                                            <label class="label">
+                                                <span class="label-text-alt">40-240 pulsaciones/min</span>
+                                            </label>
+                                            <p v-if="form.errors.tempo" class="text-red-500 text-sm mt-1">
+                                                {{ form.errors.tempo }}
+                                            </p>
+                                        </div>
+        
+                                        <!-- Ritmo -->
+                                        <div class="form-control w-full">
+                                            <label class="label">
+                                                <span class="label-text font-semibold">🥁 Ritmo / Género</span>
+                                            </label>
+                                            <input
+                                                v-model="form.rhythm"
+                                                type="text"
+                                                class="input input-bordered w-full"
+                                                placeholder="Ritmo/Estilo de la canción"
+                                            />
+                                            <label class="label">
+                                                <span class="label-text-alt">Estilo musical</span>
+                                            </label>
+                                            <p v-if="form.errors.rhythm" class="text-red-500 text-sm mt-1">
+                                                {{ form.errors.rhythm }}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </transition>
 
-                        <!-- Editor de Letras -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                📝 Letras de la Canción *
-                            </label>
-                            
-                            <TipTapEditor 
-                                v-model="form.lyrics"
-                                height="500px"
-                            />
-                            
-                            <p v-if="form.errors.lyrics" class="text-red-500 text-sm mt-1">
-                                {{ form.errors.lyrics }}
-                            </p>
+                        <!-- Editor de Letras con Bloques -->
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Letra de la Canción *
+                                </h3>
+                                
+                                <div class="divider"></div>
+                                
+                                <LyricsBlocksEditor v-model="form.lyrics_blocks" />
+
+                                <label v-if="form.errors.lyrics_blocks" class="label">
+                                    <span class="label-text-alt text-error">{{ form.errors.lyrics_blocks }}</span>
+                                </label>
+                            </div>
                         </div>
 
-                        <!-- URL Video -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
-                                🎥 URL de Video (YouTube)
-                            </label>
-                            <input
-                                v-model="form.video_url"
-                                type="url"
-                                class="w-full border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="https://www.youtube.com/watch?v=..."
-                            />
-                            <p v-if="form.errors.video_url" class="text-red-500 text-sm mt-1">
-                                {{ form.errors.video_url }}
-                            </p>
+                        <!-- Video YouTube -->
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Video de YouTube (Opcional)
+                                </h3>
+                                
+                                <div class="divider"></div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text">URL del video</span>
+                                    </label>
+                                    <input 
+                                        v-model="form.video_url"
+                                        type="url"
+                                        placeholder="https://www.youtube.com/watch?v=..."
+                                        class="input input-bordered w-full"
+                                        :class="{ 'input-error': form.errors.video_url }"
+                                    />
+                                    <label class="label">
+                                        <span class="label-text-alt">Opcional: Enlace a video de la canción</span>
+                                        <span v-if="form.errors.video_url" class="label-text-alt text-error">
+                                            {{ form.errors.video_url }}
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Categorías -->
-                        <div class="bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-                            <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                                Categorías (Opcional)
-                            </h3>
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                    Categorías (Opcional)
+                                </h3>
 
-                            <div v-if="categories && categories.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                <label
-                                    v-for="category in categories"
-                                    :key="category.id"
-                                    class="flex items-center gap-3 bg-gray-50 p-3 rounded-lg hover:bg-gray-100 cursor-pointer transition">
-                                    <input
-                                        type="checkbox"
-                                        :value="category.id"
-                                        v-model="form.categories"
-                                        class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <span class="text-sm font-medium text-gray-700">{{ category.name }}</span>
-                                </label>
+                                <div class="divider"></div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text">Selecciona las categorías para esta canción</span>
+                                    </label>
+
+                                    <div v-if="categories && categories.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <label
+                                            v-for="category in categories"
+                                            :key="category.id"
+                                            class="label cursor-pointer justify-start gap-3 bg-base-200 p-3 rounded-lg hover:bg-base-300 transition">
+                                            <input
+                                                type="checkbox"
+                                                :value="category.id"
+                                                v-model="form.categories"
+                                                class="checkbox checkbox-primary"
+                                            />
+                                            <span class="label-text">{{ category.name }}</span>
+                                        </label>
+                                    </div>
+
+                                    <div v-else class="alert alert-info">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span>No hay categorías disponibles. Crea categorías primero.</span>
+                                    </div>
+
+                                    <label v-if="form.errors.categories" class="label">
+                                        <span class="label-text-alt text-error">{{ form.errors.categories }}</span>
+                                    </label>
+                                </div>
                             </div>
-
-                            <div v-else class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <p class="text-blue-700">No hay categorías disponibles. Crea categorías primero.</p>
-                            </div>
-
-                            <p v-if="form.errors.categories" class="text-red-500 text-sm mt-1">
-                                {{ form.errors.categories }}
-                            </p>
                         </div>
 
-                        <!-- Botones -->
-                        <div class="flex justify-between items-center">
-                            <button 
-                                type="button"
-                                @click="$inertia.delete(route('admin.songs.destroy', song.id), {
-                                    onBefore: () => confirm('¿Estás seguro de eliminar esta canción?'),
-                                    onSuccess: () =>{
-                                        if(returnUrl){
-                                            localStorage.removeItem('songs_return_url');
-                                            router.visit(returnUrl);
-                                        }
-                                    }
-                                })"
-                                class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
-                                🗑️ Eliminar Canción
-                            </button>
-                            
-                            <div class="flex gap-3">
-                                <button 
-                                    type="button"
-                                    @click="goBack"
-                                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700">
-                                    Cancelar
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    :disabled="form.processing"
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
-                                    <span v-if="form.processing">Guardando...</span>
-                                    <span v-else>💾 Guardar Cambios</span>
-                                </button>
+                        <!-- Botones de acción -->
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <div class="flex justify-between items-center">
+                                    <!-- Botón Eliminar -->
+                                    <button
+                                        type="button"
+                                        @click="deleteSong"
+                                        class="btn btn-error gap-2">
+                                        <i class="ri-delete-bin-line"></i>
+                                        Eliminar Canción
+                                    </button>
+                                    
+                                    <!-- Botones Cancelar y Guardar -->
+                                    <div class="flex gap-3">
+                                        <button 
+                                            type="button"
+                                            @click="goBack"
+                                            class="btn btn-ghost gap-2">
+                                            <i class="ri-close-line"></i>
+                                            Cancelar
+                                        </button>
+                                        <button 
+                                            type="submit" 
+                                            :disabled="form.processing"
+                                            class="btn btn-primary gap-2">
+                                            <span v-if="!form.processing">
+                                                <i class="ri-save-line"></i>
+                                            </span>
+                                            <span v-if="form.processing" class="loading loading-spinner"></span>
+                                            {{ form.processing ? 'Guardando...' : 'Guardar Cambios' }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -319,5 +414,4 @@ const goBack = () => {
         </div>
 
     </AuthenticatedLayout>
-
 </template>

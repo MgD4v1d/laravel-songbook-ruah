@@ -233,18 +233,16 @@ class SongController extends Controller
     public function store(SongRequest $request): JsonResponse
     {
         $data = $request->validated();
-        if (isset($data['lyrics'])) {
-            // $data['lyrics'] = $this->normalizeLyricsHtml($data['lyrics']);
-            $data['lyrics'] = clean($data['lyrics']);
-        }
+
+        $categories = $data['categories'] ?? [];
+        unset($data['categories']);
 
         $song = Song::create($data);
 
-        if ($request->has('categories')) {
-            $song->categories()->sync($request->categories);
+        if (!empty($categories)) {
+            $song->categories()->sync($categories);
         }
 
-        // Tocar el modelo para actualizar updated_at y disparar el observer
         $song->touch();
 
         return response()->json(
@@ -260,18 +258,11 @@ class SongController extends Controller
     {
         $data = $request->validated();
 
-        if (isset($data['lyrics'])) {
-            // $data['lyrics'] = $this->normalizeLyricsHtml($data['lyrics']);
-            $data['lyrics'] = clean($data['lyrics']);
-        }
+        $categories = $data['categories'] ?? [];
+        unset($data['categories']);
 
         $song->update($data);
-
-        if ($request->has('categories')) {
-            $song->categories()->sync($request->categories);
-        }
-
-        // Invalidar cachés relacionados
+        $song->categories()->sync($categories);
         $song->touch();
 
         return response()->json(
@@ -292,37 +283,4 @@ class SongController extends Controller
         ]);
     }
 
-    /**
-     * Normalizar letras
-     */
-    private function normalizeLyricsHtml(string $html): string
-    {
-        // 1. Extraer contenido de todos los <p>
-        preg_match_all('/<p[^>]*>(.*?)<\/p>/s', $html, $matches);
-
-        if (empty($matches[1])) {
-            return $html;
-        }
-
-        // 2. Juntar todo el contenido con <br/>
-        $parts = array_filter(array_map('trim', $matches[1]), fn ($s) => $s !== '');
-        $combined = implode('<br/>', $parts);
-
-        // 3. Normalizar variantes de <br> a <br/>
-        $normalized = preg_replace('/<br\s*\/?>/', '<br/>', $combined);
-
-        // 4. Separar estrofas por doble <br/> o mas
-        $stanzas = preg_split('/(<br\/>){2,}/', $normalized);
-
-        // 5. Limpiar cada estrofa
-        $stanzas = array_filter(array_map(function ($s) {
-            $s = trim($s);
-            $s = preg_replace('/^(<br\/>)+/', '', $s);
-            $s = preg_replace('/(<br\/>)+$/', '', $s);
-
-            return trim($s);
-        }, $stanzas), fn ($s) => $s !== '' && $s !== '<br/>');
-
-        return implode("\n\n", array_map(fn ($s) => "<p>{$s}</p>", $stanzas));
-    }
 }
