@@ -18,7 +18,7 @@ class CategoryResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
-            'songs_count' => $this->when($this->songs_count !== null, $this->songs_count),
+            'songCount' => $this->when($this->songs_count !== null, $this->songs_count),
             'order' => $this->order,
             'description' => $this->description,
             'icon' => $this->icon,

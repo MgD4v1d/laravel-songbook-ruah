@@ -1,8 +1,8 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import TipTapEditor from '@/Components/TipTapEditor.vue'; // Importar
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import LyricsBlocksEditor from '@/Components/LyricsBlocksEditor.vue';
 
 const { categories } = defineProps({
     categories: Array
@@ -11,7 +11,7 @@ const { categories } = defineProps({
 const form = useForm({
     title: '',
     artist: '',
-    lyrics: '',
+    lyrics_blocks: [],
     key: '',
     rhythm: '',
     tempo: null,
@@ -236,14 +236,20 @@ const submit = () => {
                                 
                                 <div class="divider"></div>
                                 
-                                <TipTapEditor 
+                                <!-- <TipTapEditor 
                                     v-model="form.lyrics"
                                     placeholder="Escribe las letras aquí..."
                                     height="500px"
-                                />
+                                /> -->
 
-                                <label v-if="form.errors.lyrics" class="label">
-                                    <span class="label-text-alt text-error">{{ form.errors.lyrics }}</span>
+                                <!-- NUEVO: Editor de bloques -->
+                                <div class="mb-3">
+                                    <label class="form-label">Letra de la canción *</label>
+                                    <LyricsBlocksEditor v-model="form.lyrics_blocks" />
+                                </div>
+
+                                <label v-if="form.errors.lyrics_blocks" class="label">
+                                    <span class="label-text-alt text-error">{{ form.errors.lyrics_blocks }}</span>
                                 </label>
                             </div>
                         </div>
