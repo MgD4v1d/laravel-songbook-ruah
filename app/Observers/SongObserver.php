@@ -29,12 +29,23 @@ class SongObserver
     }
 
     /**
+     * Handle the Song "deleting" event.
+     * Pre-load categories before the cascade delete removes pivot records.
+     */
+    public function deleting(Song $song): void
+    {
+        $song->load('categories:id,slug');
+    }
+
+    /**
      * Handle the Song "deleted" event.
      */
     public function deleted(Song $song): void
     {
+        \Log::info('SongObserver: deleted event fired', ['song_id' => $song->id]);
         $this->clearCache();
         Cache::forget("song:{$song->id}");
+        Cache::put('songs:last_modified_ts', now()->timestamp, 3600);
         $this->clearCategoryCaches($song);
     }
 
