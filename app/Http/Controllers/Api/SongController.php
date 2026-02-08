@@ -116,22 +116,6 @@ class SongController extends Controller
     /**
      * Última modificación
      */
-
-    // public function lastModified()
-    // {
-    //     $lastModified = Cache::remember('songs:last_modified', 3600, function () {
-    //         return Song::max('updated_at');
-    //     });
-
-    //     if (empty($lastModified)) {
-    //         $lastModified = now();
-    //     }
-
-    //     $lastModifiedDate = Carbon::parse($lastModified)->toRfc7231String();
-
-    //     return response('', 200)->header('Last-Modified', $lastModifiedDate);
-    // }
-
     public function lastModified(Request $request)
     {
         $timestamp = Cache::remember('songs:last_modified_ts', 3600, function () {
@@ -239,7 +223,7 @@ class SongController extends Controller
 
         $song = Song::create($data);
 
-        if (!empty($categories)) {
+        if (! empty($categories)) {
             $song->categories()->sync($categories);
         }
 
@@ -282,5 +266,4 @@ class SongController extends Controller
             'message' => 'Song deleted successfully',
         ]);
     }
-
 }
