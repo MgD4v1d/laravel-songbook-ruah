@@ -76,9 +76,10 @@
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">
                             📝 Letras
                         </h3>
-                        <div 
-                            class="prose prose-lg max-w-none lyrics-content"
-                            v-html="htmlLyrics"
+
+                        <div
+                            class="lyrics-content text-gray-800"
+                            v-html="renderedLyrics"
                         ></div>
                     </div>
                 </div>
@@ -93,7 +94,6 @@
 
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { marked } from 'marked';
 import { computed } from 'vue';
 
 
@@ -102,17 +102,65 @@ const {song} = defineProps({
 });
 
 
-marked.setOptions({
-    breaks: true,
-    gfm: true,
-    headerIds: false,
-    mangle: false
-});
+// Escapear HTML
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Procesar una línea: detecta [Chord] y los posiciona arriba de la letra
+const processLine = (line) => {
+    const hasChords = /\[.+?\]/.test(line);
 
-// Covertir markdown a HTML
-const htmlLyrics = computed(()=>{
-    return marked(song.lyrics || '');
+    if (!hasChords) {
+        // Línea sin acordes: aplicar negrita/cursiva markdown
+        let html = esc(line);
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+        return `<div class="lyrics-line">${html}</div>`;
+    }
+
+    // Línea con acordes: separar en segmentos [Chord]texto
+    const parts = line.split(/(\[[^\]]+\])/);
+    let html = '<div class="lyrics-line has-chords">';
+    let pendingChord = null;
+
+    for (const part of parts) {
+        if (!part) continue;
+        const chordMatch = part.match(/^\[([^\]]+)\]$/);
+        if (chordMatch) {
+            // Si ya hay un acorde pendiente sin texto, emitirlo con espacio
+            if (pendingChord) {
+                html += `<span class="chord-pair"><span class="chord-name">${esc(pendingChord)}</span>&nbsp;</span>`;
+            }
+            pendingChord = chordMatch[1];
+        } else {
+            if (pendingChord) {
+                html += `<span class="chord-pair"><span class="chord-name">${esc(pendingChord)}</span>${esc(part)}</span>`;
+                pendingChord = null;
+            } else {
+                html += esc(part);
+            }
+        }
+    }
+    // Acorde final sin texto después
+    if (pendingChord) {
+        html += `<span class="chord-pair"><span class="chord-name">${esc(pendingChord)}</span></span>`;
+    }
+
+    html += '</div>';
+    return html;
+};
+
+// Unir todos los bloques o usar lyrics plano, y renderizar como texto corrido
+const renderedLyrics = computed(() => {
+    let fullText = '';
+
+    if (song.lyrics_blocks && song.lyrics_blocks.length) {
+        fullText = song.lyrics_blocks.map(b => b.content || '').join('\n\n');
+    } else {
+        fullText = song.lyrics || '';
+    }
+
+    if (!fullText) return '';
+    return fullText.split('\n').map(processLine).join('');
 });
 
 // Extraer ID de video de YouTube
@@ -128,34 +176,45 @@ const youtubeId = computed(() => getYouTubeId(song.video_url));
 </script>
 
 <style scoped>
-.lyrics-content :deep(h2) {
-    color: #2563eb;
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #dbeafe;
+.lyrics-content {
+    font-size: 1.05rem;
 }
 
-.lyrics-content :deep(p) {
-    line-height: 2;
-    margin-bottom: 1rem;
+.lyrics-content :deep(.lyrics-line) {
+    line-height: 1.6;
     color: #374151;
-    white-space: pre-wrap;
+    min-height: 1.6em;
+    padding: 0.1em 0;
+}
+
+.lyrics-content :deep(.lyrics-line.has-chords) {
+    padding-top: 1.4em;
+    line-height: 1.6;
+}
+
+.lyrics-content :deep(.chord-pair) {
+    position: relative;
+    display: inline;
+}
+
+.lyrics-content :deep(.chord-name) {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    font-weight: 700;
+    font-size: 0.85em;
+    font-family: 'Courier New', Courier, monospace;
+    color: #dc2626;
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 .lyrics-content :deep(strong) {
-    color: #dc2626;
     font-weight: 700;
-    font-size: 0.95em;
-    background-color: #fee2e2;
-    padding: 0.125rem 0.375rem;
-    border-radius: 0.25rem;
 }
 
-.lyrics-content :deep(*){
-    white-space: pre-wrap;
+.lyrics-content :deep(em) {
+    font-style: italic;
+    color: #6b7280;
 }
-
 </style>

@@ -5,7 +5,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\SongController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\AIController;
 
 // Ruta pública de login
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -29,6 +29,11 @@ Route::middleware('api.key')->group(function(){
         Route::post('/batch', [SongController::class, 'batch']);
         Route::get('/stats', [SongController::class, 'stats']);
         Route::get('/{song}', [SongController::class, 'show']);
+    });
+
+
+    Route::prefix('ai')->group(function(){
+        Route::post('/generate-repertoire', [AIController::class, 'generateRepertoireAi']);
     });
 
 });
