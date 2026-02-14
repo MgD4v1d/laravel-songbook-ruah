@@ -68,6 +68,8 @@ class Song extends Model
         return collect($this->lyrics_blocks)
             ->map(function($block) {
                 $content = $block['content'] ?? '';
+                // Remover acordes [Am], [C], [G7], etc.
+                $content = preg_replace('/\[[^\]]+\]/', '', $content);
                 // Remover marcadores de formato
                 $content = preg_replace('/\*\*(.*?)\*\*/s', '$1', $content);
                 $content = preg_replace('/_(.*?)_/s', '$1', $content);
