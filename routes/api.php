@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\SongController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AIController;
+use App\Http\Controllers\Api\TelegramSongController;
 
 // Ruta pública de login
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -58,5 +59,10 @@ Route::middleware('auth:api')->group(function () {
     // Admin Stats
     Route::get('/admin/stats', [StatsController::class, 'adminStats']);
 });
+
+Route::middleware('bot.api.key')->group(function () {
+    Route::post('/telegram/song', [TelegramSongController::class, 'store']);
+});
+
 
 Route::get('/health', [SongController::class, 'health']);

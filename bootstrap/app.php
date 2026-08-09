@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Middleware alias
         $middleware->alias([
             'api.key' => \App\Http\Middleware\CheckApiKey::class,
+            'bot.api.key' => \App\Http\Middleware\CheckBotApi::class,
         ]);
         
     })
