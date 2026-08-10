@@ -130,5 +130,6 @@ return [
     */
 
     'api_key' => env('API_KEY'),
+    'bot_api_key' => env('BOT_API_KEY')
 
 ];

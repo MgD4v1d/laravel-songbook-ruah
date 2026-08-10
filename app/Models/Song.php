@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Services\LyricsBlockParser;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
 
 class Song extends Model
 {
@@ -92,132 +94,15 @@ class Song extends Model
         }
 
         if ($this->attributes['lyrics'] ?? null) {
-            return $this->convertHtmlToBlocks($this->attributes['lyrics']);
+            return LyricsBlockParser::parse($this->attributes['lyrics']);
         }
+
 
         return [];
     }
-    /**
-     * Convierte HTML a formato de bloques
-     */
-    private function convertHtmlToBlocks(string $html): array
-    {
-        if (empty(trim($html))) {
-            return [];
-        }
+    
 
-        // Remover tags HTML pero preservar estructura
-        $html = $this->cleanHtml($html);
-        
-        // Convertir <strong>, <b> a **
-        $html = preg_replace('/<(strong|b)>(.*?)<\/(strong|b)>/i', '**$2**', $html);
-        
-        // Convertir <em>, <i> a _
-        $html = preg_replace('/<(em|i)>(.*?)<\/(em|i)>/i', '_$2_', $html);
-        
-        // Convertir <br> y <br/> a saltos de línea
-        $html = preg_replace('/<br\s*\/?>/i', "\n", $html);
-        
-        // Dividir por párrafos <p>
-        $paragraphs = preg_split('/<\/?p>/i', $html);
-        
-        // Si no hay párrafos, dividir por dobles saltos de línea
-        if (count($paragraphs) <= 1) {
-            $paragraphs = explode("\n\n", $html);
-        }
 
-        // Filtrar vacíos y crear bloques
-        $blocks = collect($paragraphs)
-            ->map(fn($p) => trim(strip_tags($p)))
-            ->filter(fn($p) => !empty($p))
-            ->values()
-            ->map(function($content, $index) {
-                return [
-                    'id' => time() + $index,
-                    'type' => $this->detectBlockType($content, $index),
-                    'content' => $content,
-                    'label' => $this->generateBlockLabel($content, $index)
-                ];
-            })
-            ->toArray();
-
-        return $blocks;
-    }
-
-    /**
-     * Limpia HTML preservando solo tags importantes
-     */
-    private function cleanHtml(string $html): string
-    {
-        // Remover scripts y styles
-        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-        $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
-        
-        // Convertir entidades HTML
-        $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        
-        return $html;
-    }
-
-    /**
-     * Detecta el tipo de bloque basado en el contenido
-     */
-    private function detectBlockType(string $content, int $index): string
-    {
-        $content = strtolower($content);
-        
-        // Patrones comunes de coros
-        $chorusPatterns = [
-            '/^coro/i',
-            '/\(.*?x\s*\d+.*?\)/i',  // (x2), (x3)
-            '/^\[coro\]/i',
-            '/^estribillo/i',
-            '/aleluya/i',
-            '/gloria/i',
-            '/hosanna/i',
-        ];
-
-        foreach ($chorusPatterns as $pattern) {
-            if (preg_match($pattern, $content)) {
-                return 'chorus';
-            }
-        }
-
-        // Patrones de puente
-        $bridgePatterns = [
-            '/^puente/i',
-            '/^\[puente\]/i',
-            '/^bridge/i',
-        ];
-
-        foreach ($bridgePatterns as $pattern) {
-            if (preg_match($pattern, $content)) {
-                return 'bridge';
-            }
-        }
-
-        // Por defecto es estrofa
-        return 'verse';
-    }
-
-    /**
-     * Genera etiqueta automática para el bloque
-     */
-    private function generateBlockLabel(string $content, int $index): string
-    {
-        $type = $this->detectBlockType($content, $index);
-        
-        switch ($type) {
-            case 'chorus':
-                return 'Coro';
-            case 'bridge':
-                return 'Puente';
-            case 'verse':
-            default:
-                // Contar cuántas estrofas hay antes
-                return 'Estrofa ' . ($index + 1);
-        }
-    }
 
     /**
      * Convierte bloques de vuelta a HTML (para compatibilidad)
@@ -287,7 +172,7 @@ class Song extends Model
     /**
      * Scope para filtrar por categoría
      */
-    public function scopeByCategory(Builder $query, $categoryId): void
+    public function scopeByCategory(Builder $query, int $categoryId): void
     {
         $query->whereHas('categories', function($q) use ($categoryId) {
             $q->where('categories.id', $categoryId);
