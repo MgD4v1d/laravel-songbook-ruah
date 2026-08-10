@@ -26,10 +26,17 @@ class LyricsBlockParser
             ->filter(fn($p) => !empty($p))
             ->values()
             ->map(function ($blockContent, $index) {
+                $cleanContent = preg_replace(
+                    '/^\s*\[(coro|estribillo|puente|bridge|verso|chorus|verse)\]\s*\n?/iu',
+                    '',
+                    $blockContent,
+                    1
+                );
+
                 return [
                     'id' => time() + $index,
                     'type' => self::detectBlockType($blockContent, $index),
-                    'content' => $blockContent,
+                    'content' => trim($cleanContent),
                     'label' => self::generateBlockLabel($blockContent, $index),
                 ];
             })
@@ -49,11 +56,18 @@ class LyricsBlockParser
     {
         $content = strtolower($content);
 
+        // Marcadores explícitos al inicio del bloque tienen prioridad sobre
+        // las palabras clave sueltas (ej. "gloria" no debe pisar un [Puente]).
+        if (preg_match('/^\s*\[?(puente|bridge)\]?/i', $content)) {
+            return 'bridge';
+        }
+
+        if (preg_match('/^\s*\[?(coro|estribillo|chorus)\]?/i', $content)) {
+            return 'chorus';
+        }
+
         $chorusPatterns = [
-            '/^coro/i',
             '/\(.*?x\s*\d+.*?\)/i',
-            '/^\[coro\]/i',
-            '/^estribillo/i',
             '/aleluya/i',
             '/gloria/i',
             '/hosanna/i',
@@ -62,18 +76,6 @@ class LyricsBlockParser
         foreach ($chorusPatterns as $pattern) {
             if (preg_match($pattern, $content)) {
                 return 'chorus';
-            }
-        }
-
-        $bridgePatterns = [
-            '/^puente/i',
-            '/^\[puente\]/i',
-            '/^bridge/i',
-        ];
-
-        foreach ($bridgePatterns as $pattern) {
-            if (preg_match($pattern, $content)) {
-                return 'bridge';
             }
         }
 
