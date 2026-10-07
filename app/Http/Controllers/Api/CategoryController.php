@@ -100,9 +100,11 @@ class CategoryController extends Controller
 
             return response()->json($stats);
         } catch (\Throwable $e) {
+            report($e); // Se guarda el detalle en storage/logs/laravel.log
+
             return response()->json([
                 'status' => 'ERROR',
-                'message' => $e->getMessage(),
+                'message' => 'No se pudieron obtener las estadísticas.',
                 'timestamp' => now()->toISOString(),
             ], 500);
         }
