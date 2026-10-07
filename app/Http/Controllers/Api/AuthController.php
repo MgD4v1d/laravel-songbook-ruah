@@ -19,11 +19,23 @@ class AuthController extends Controller
             'password.required' => 'La contraseña es obligatoria.',
         ]);
 
+
         if (! $token = auth('api')->attempt($credentials)) {
+
             return response()->json([
                 'success' => false,
                 'message' => 'Credenciales incorrectas.',
             ], 401);
+        }
+
+        if (! auth('api')->user()->is_admin) {
+
+            auth('api')->logout();   // invalida el token que se acaba de generar
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'No autorizado.'
+            ], 403);
         }
 
         return $this->respondWithToken($token);
