@@ -13,7 +13,6 @@ class SongObserver
      */
     public function created(Song $song): void
     {
-        \Log::info('SongObserver: created event fired', ['song_id' => $song->id]);
         $this->clearCache();
         $this->clearCategoryCaches($song);
     }
@@ -23,7 +22,6 @@ class SongObserver
      */
     public function updated(Song $song): void
     {
-        \Log::info('SongObserver: updated event fired', ['song_id' => $song->id]);
         $this->clearCache();
         Cache::forget("song:{$song->id}");
         $this->clearCategoryCaches($song);
@@ -34,7 +32,7 @@ class SongObserver
      */
     public function deleted(Song $song): void
     {
-        \Log::info('SongObserver: deleted event fired', ['song_id' => $song->id]);
+
         $this->clearCache();
         Cache::forget("song:{$song->id}");
         Cache::put('songs:last_modified_ts', now()->timestamp, 3600);
@@ -55,7 +53,6 @@ class SongObserver
 
         foreach ($keys as $key) {
             Cache::forget($key);
-            \Log::info("Cache cleared: {$key}");
         }
     }
 
