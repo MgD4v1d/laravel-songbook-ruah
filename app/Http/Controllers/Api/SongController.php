@@ -45,6 +45,7 @@ class SongController extends Controller
             }
 
             $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+                ->with('categories:id,name,slug')
                 ->byCategorySlug($categorySlug)
                 ->alphabetical()
                 ->get();
@@ -103,6 +104,7 @@ class SongController extends Controller
     {
         $songs = Cache::remember('songs:recent', 3600, function () {
             return Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+                ->with('categories:id,name,slug')
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
                 ->get();
@@ -193,10 +195,17 @@ class SongController extends Controller
      */
     public function songs(Request $request)
     {
-        $perPage = $request->input('per_page', 15);
-        $search = $request->input('search');
-        $sortBy = $request->input('sort_by', 'title');
-        $order = $request->input('order', 'asc');
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'search'   => 'nullable|string|max:100',
+            'sort_by'  => 'sometimes|in:title,artist,key,created_at,updated_at',
+            'order'    => 'sometimes|in:asc,desc',
+        ]);
+
+        $perPage = (int) ($validated['per_page'] ?? 15);
+        $search  = $validated['search'] ?? null;
+        $sortBy  = $validated['sort_by'] ?? 'title';
+        $order   = $validated['order'] ?? 'asc';
 
         $query = Song::query()->with('categories:id,name,slug');
 
@@ -242,11 +251,15 @@ class SongController extends Controller
     {
         $data = $request->validated();
 
+        $syncCategories = array_key_exists('categories', $data);
         $categories = $data['categories'] ?? [];
+
         unset($data['categories']);
 
         $song->update($data);
-        $song->categories()->sync($categories);
+        if ($syncCategories) {
+            $song->categories()->sync($categories);
+        }
         $song->touch();
 
         return response()->json(

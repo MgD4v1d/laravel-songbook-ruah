@@ -5,11 +5,12 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\SongController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AIController;
 use App\Http\Controllers\Api\TelegramSongController;
 
 // Ruta pública de login
-Route::post('/auth/login', [AuthController::class, 'login']);
+Route::post('/auth/login', [AuthController::class, 'login'])
+    ->middleware('throttle:5,1') // Limitar a 5 intentos por minuto
+    ->name('api.login');
 
 
 
@@ -32,15 +33,10 @@ Route::middleware('api.key')->group(function(){
         Route::get('/{song}', [SongController::class, 'show']);
     });
 
-
-    Route::prefix('ai')->group(function(){
-        Route::post('/generate-repertoire', [AIController::class, 'generateRepertoireAi']);
-    });
-
 });
 
 // Rutas protegidas con JWT (admin desde Flutter)
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'admin'])->group(function () {
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::post('/auth/refresh', [AuthController::class, 'refresh']);

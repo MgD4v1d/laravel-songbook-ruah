@@ -22,15 +22,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // API middleware  con Cors personalizado
-        $middleware->api(append: [
-            \App\Http\Middleware\CorsMiddleware::class,
-        ]);
-
         // Middleware alias
         $middleware->alias([
             'api.key' => \App\Http\Middleware\CheckApiKey::class,
             'bot.api.key' => \App\Http\Middleware\CheckBotApi::class,
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
         
     })

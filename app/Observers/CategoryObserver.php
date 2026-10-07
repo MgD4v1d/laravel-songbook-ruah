@@ -21,7 +21,11 @@ class CategoryObserver
     public function updated(Category $category): void
     {
         $this->clearCache();
+        $oldSlug = $category->getOriginal('slug');
+        Cache::forget("category:{$oldSlug}");
         Cache::forget("category:{$category->slug}");
+        Cache::forget("songs:metadata:category:{$oldSlug}");
+        Cache::forget("songs:metadata:category:{$category->slug}");
     }
 
     /**
@@ -43,6 +47,7 @@ class CategoryObserver
             'categories:all',
             'categories:stats',
             'categories:last_modified_ts',
+            'songs:metadata',
         ];
 
         foreach ($keys as $key) {

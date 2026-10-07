@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Models\Category;
 use App\Models\Song;
 use Illuminate\Support\Facades\Cache;
 
@@ -26,15 +27,6 @@ class SongObserver
         $this->clearCache();
         Cache::forget("song:{$song->id}");
         $this->clearCategoryCaches($song);
-    }
-
-    /**
-     * Handle the Song "deleting" event.
-     * Pre-load categories before the cascade delete removes pivot records.
-     */
-    public function deleting(Song $song): void
-    {
-        $song->load('categories:id,slug');
     }
 
     /**
@@ -72,14 +64,9 @@ class SongObserver
      */
     private function clearCategoryCaches(Song $song): void
     {
-        // Cargar las categorías de la canción si no están cargadas
-        if (! $song->relationLoaded('categories')) {
-            $song->load('categories:id,slug');
-        }
-
         // Borrar el cache de metadata por cada categoría asociada
-        foreach ($song->categories as $category) {
-            Cache::forget("songs:metadata:category:{$category->slug}");
+        foreach (Category::pluck('slug') as $slug) {
+            Cache::forget("songs:metadata:category:{$slug}");
         }
     }
 }

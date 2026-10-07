@@ -12,7 +12,6 @@ use Inertia\Inertia;
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
@@ -25,7 +24,7 @@ Route::get('/aviso-de-privacidad', function () {
 Route::get('/delete-account', [DeleteAccountController::class, 'show'])->name('delete-account');
 Route::post('/delete-account', [DeleteAccountController::class, 'request'])->name('delete-account.request');
 
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/dashboard', function () {
         $stats = [
