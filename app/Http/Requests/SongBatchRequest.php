@@ -23,7 +23,7 @@ class SongBatchRequest extends FormRequest
     {
         return [
             'ids' => 'required|array|min:1|max:50',
-            'ids.*' => 'required|integer|exists:songs,id'
+            'ids.*' => 'required|integer|distinct'
         ];
     }
 
@@ -31,7 +31,6 @@ class SongBatchRequest extends FormRequest
     {
         return [
             'ids.required' => 'Debe proporcionar al menos un ID',
-            'ids.*.exists' => 'Una o más canciones no existen'
         ];
     }
 }

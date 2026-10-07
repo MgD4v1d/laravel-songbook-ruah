@@ -133,8 +133,6 @@ class AdminSongController extends Controller
         ]);
 
         // Normalizar estrofas (agrupar <p> en estrofas con <br>) ANTES de purificar
-        // $validated['lyrics'] = $this->normalizeLyricsHtml($validated['lyrics']);
-        // $validated['lyrics'] = clean($validated['lyrics']);
 
         $categories = $validated['categories'] ?? [];
         unset($validated['categories']);

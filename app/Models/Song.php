@@ -103,41 +103,9 @@ class Song extends Model
     
 
 
-
     /**
-     * Convierte bloques de vuelta a HTML (para compatibilidad)
-     */
-    public function blocksToHtml(): string
-    {
-        if (!$this->lyrics_blocks) {
-            return $this->lyrics ?? '';
-        }
-
-        return collect($this->lyrics_blocks)
-            ->map(function($block) {
-                $content = $block['content'] ?? '';
-                
-                // Convertir markdown a HTML
-                $content = preg_replace('/\*\*(.*?)\*\*/', '<strong>$1</strong>', $content);
-                $content = preg_replace('/_(.*?)_/', '<em>$1</em>', $content);
-                $content = nl2br($content);
-                
-                $type = $block['type'] ?? 'verse';
-                $label = $block['label'] ?? '';
-                
-                return "<div class='lyrics-block lyrics-{$type}'>"
-                     . ($label ? "<strong>{$label}</strong><br>" : '')
-                     . $content
-                     . "</div>";
-            })
-            ->join("\n\n");
-    }
-
-
-
-    /**
-    * Scope para busquedas de texto completo
-    * Usa FULLTEXT index de MySQL
+    * Scope para Búsqueda con LIKE en título, artista y letra.
+    * 
     */
 
     public function scopeSearch(Builder $query, string $search): void
@@ -151,15 +119,6 @@ class Song extends Model
         });
     }
 
-    /**
-     *  Scope para filtrar por tono/key
-     */
-
-    public function scopeByKey(Builder $query, string $key): void
-    {
-        $query->where('key', $key);
-    }
-
 
     /**
      * Scope para ordenar alfabéticamente
@@ -169,15 +128,6 @@ class Song extends Model
         $query->orderBy('title', 'asc');
     }
 
-    /**
-     * Scope para filtrar por categoría
-     */
-    public function scopeByCategory(Builder $query, int $categoryId): void
-    {
-        $query->whereHas('categories', function($q) use ($categoryId) {
-            $q->where('categories.id', $categoryId);
-        });
-    }
 
     /**
      * Scope para filtrar por slug de categoría
@@ -187,30 +137,6 @@ class Song extends Model
         $query->whereHas('categories', function($q) use ($slug) {
             $q->where('categories.slug', $slug);
         });
-    }
-
-    /**
-     * Obtener estadísticas de bloques
-     */
-    public function getBlockStatsAttribute(): array
-    {
-        if (!$this->lyrics_blocks) {
-            return [
-                'total' => 0,
-                'verses' => 0,
-                'choruses' => 0,
-                'bridges' => 0,
-            ];
-        }
-
-        $blocks = collect($this->lyrics_blocks);
-
-        return [
-            'total' => $blocks->count(),
-            'verses' => $blocks->where('type', 'verse')->count(),
-            'choruses' => $blocks->where('type', 'chorus')->count(),
-            'bridges' => $blocks->where('type', 'bridge')->count(),
-        ];
     }
 
 }
