@@ -121,7 +121,7 @@ class SongController extends Controller
     public function lastModified(Request $request)
     {
         $timestamp = Cache::remember('songs:last_modified_ts', 3600, function () {
-            return Song::latest('updated_at')->value('updated_at')?->timestamp ?? now()->timestamp;
+            return Song::withTrashed()->latest('updated_at')->value('updated_at')?->timestamp ?? now()->timestamp;
         });
 
         $lastModifiedDate = Carbon::createFromTimestamp($timestamp);
@@ -154,7 +154,7 @@ class SongController extends Controller
                     'status' => 'OK',
                     'message' => 'status API success',
                     'songs_count' => Song::count(),
-                    'last_modified' => Song::max('updated_at'),
+                    'last_modified' => Song::withTrashed()->max('updated_at'),
                 ];
             });
 

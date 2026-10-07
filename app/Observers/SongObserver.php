@@ -35,7 +35,6 @@ class SongObserver
 
         $this->clearCache();
         Cache::forget("song:{$song->id}");
-        Cache::put('songs:last_modified_ts', now()->timestamp, 3600);
         $this->clearCategoryCaches($song);
     }
 
