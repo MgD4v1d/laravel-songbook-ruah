@@ -4,7 +4,8 @@ import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import LyricsBlocksEditor from '@/Components/LyricsBlocksEditor.vue';
 
-const { categories } = defineProps({
+const { categories, seasonOptions } = defineProps({
+    seasonOptions: Array,
     categories: Array
 });
 
@@ -16,8 +17,32 @@ const form = useForm({
     rhythm: '',
     tempo: null,
     video_url: '',
+    seasons: ['general'],
     categories: []
 });
+
+
+// Tiempo litúrgico: "Uso general" excluye a los demás tiempos
+function toggleSeason(value) {
+    const selected = form.seasons
+
+    // 1) Si ya estaba marcado → desmarcarlo
+    if (selected.includes(value)) {
+        const remaining = selected.filter(s => s !== value)
+        // Si no queda ninguno, regresar a "Uso general"
+        form.seasons = remaining.length ? remaining : ['general']
+        return
+    }
+
+    // 2) Se marcó "Uso general" → queda SOLO él
+    if (value === 'general') {
+        form.seasons = ['general']
+        return
+    }
+
+    // 3) Se marcó otro tiempo → quitar "general" (si estaba) y agregar el nuevo
+    form.seasons = [...selected.filter(s => s !== 'general'), value]
+}
 
 const isMusicianMode = ref(false);
 
@@ -283,6 +308,47 @@ const submit = () => {
                                         <span v-if="form.errors.video_url" class="label-text-alt text-error">
                                             {{ form.errors.video_url }}
                                         </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Liturgial Seasons -->
+                        <div class="card bg-base-100 shadow-xl">
+                            <div class="card-body">
+                                <h3 class="card-title">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                    </svg>
+                                    Tiempo litúrgico
+                                </h3>
+
+                                <div class="divider"></div>
+
+                                <div class="form-control w-full">
+                                    <label class="label">
+                                        <span class="label-text">Selecciona el tiempo litúrgico para esta canción</span>
+                                    </label>
+
+                                    <div v-if="seasonOptions && seasonOptions.length > 0" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                        <label
+                                            v-for="seasonOption in seasonOptions"
+                                            :key="seasonOption.value"
+                                            class="label cursor-pointer justify-start gap-3 bg-base-200 p-3 rounded-lg hover:bg-base-300 transition">
+                                            <input
+                                                type="checkbox"
+                                                :checked="form.seasons.includes(seasonOption.value)"
+                                                @change="toggleSeason(seasonOption.value)"
+                                                class="checkbox checkbox-primary"
+                                            />
+                                            <span class="label-text">{{ seasonOption.label }}</span>
+                                            <span class="w-3 h-3 rounded-full" :style="{background: seasonOption.color}"></span>
+                                        </label>
+                                    </div>
+
+
+                                    <label v-if="form.errors.seasons" class="label">
+                                        <span class="label-text-alt text-error">{{ form.errors.seasons }}</span>
                                     </label>
                                 </div>
                             </div>

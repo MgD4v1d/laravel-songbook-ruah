@@ -23,7 +23,7 @@ class SongController extends Controller
     {
         $songs = Cache::remember('songs:metadata', 3600, function () {
             return Song::with('categories:id,name,slug')
-                ->select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+                ->select(['id', 'title', 'artist', 'key', 'video_url', 'seasons', 'created_at', 'updated_at'])
                 ->alphabetical()
                 ->get();
         });
@@ -44,7 +44,7 @@ class SongController extends Controller
                 return null;
             }
 
-            $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+            $songs = Song::select(['id', 'title', 'artist', 'key', 'video_url', 'seasons', 'created_at', 'updated_at'])
                 ->with('categories:id,name,slug')
                 ->byCategorySlug($categorySlug)
                 ->alphabetical()
@@ -103,7 +103,7 @@ class SongController extends Controller
     public function recent(): JsonResponse
     {
         $songs = Cache::remember('songs:recent', 3600, function () {
-            return Song::select(['id', 'title', 'artist', 'key', 'video_url', 'created_at', 'updated_at'])
+            return Song::select(['id', 'title', 'artist', 'key', 'video_url', 'seasons', 'created_at', 'updated_at'])
                 ->with('categories:id,name,slug')
                 ->orderBy('created_at', 'desc')
                 ->limit(5)
