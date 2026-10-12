@@ -24,6 +24,7 @@ class SongResource extends JsonResource
             'rhythm' => $this->rhythm,
             'tempo' => $this->tempo,
             'videoUrl' => $this->video_url,
+            'seasons' => $this->seasons?->map->value ?? ['general'],
             'categories' => $this->categories->map(function($category){
                 return [
                     'id' => $category->id,

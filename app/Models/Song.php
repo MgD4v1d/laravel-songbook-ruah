@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\LiturgicalSeason;
 use App\Services\LyricsBlockParser;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\AsEnumCollection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -22,15 +24,20 @@ class Song extends Model
         'key',
         'rhythm',
         'tempo',
-        'video_url'
+        'video_url',
+        'seasons',
     ];
 
 
-    protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'lyrics_blocks' => 'array'
-    ];
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'lyrics_blocks' => 'array',
+            'seasons' => AsEnumCollection::of(LiturgicalSeason::class),
+        ];
+    }
 
     /**
      * Relación con categorías
@@ -55,6 +62,13 @@ class Song extends Model
             if ($song->lyrics_blocks && is_array($song->lyrics_blocks)) {
                 $song->lyrics = $song->blocksToPlainText();
             }
+
+
+            if (!$song->seasons || $song->seasons->isEmpty() || $song->seasons->contains(LiturgicalSeason::General)) {
+                $song->seasons = [LiturgicalSeason::General];
+            } 
+
+
         });
     }
 

@@ -21,6 +21,10 @@ Route::get('/aviso-de-privacidad', function () {
     return Inertia::render('AvisoDePrivacidad');
 })->name('aviso-de-privacidad');
 
+Route::get('/terminos-y-condiciones', function () {
+    return Inertia::render('TerminosYCondiciones');
+})->name('terminos-y-condiciones');
+
 Route::get('/delete-account', [DeleteAccountController::class, 'show'])->name('delete-account');
 Route::post('/delete-account', [DeleteAccountController::class, 'request'])->name('delete-account.request');
 

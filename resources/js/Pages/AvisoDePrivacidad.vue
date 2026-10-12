@@ -1,5 +1,12 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+
+const year = new Date().getFullYear();
+const inicioAno = new Date(new Date().getFullYear(), 0, 1).toLocaleDateString('es-MX', { month: 'long' });
+
+
+const fullDate = inicioAno.charAt(0).toUpperCase() + inicioAno.slice(1) + ' ' + year;
+
 </script>
 
 <template>
@@ -38,7 +45,7 @@ import { Head, Link } from '@inertiajs/vue3';
                     </h1>
 
                     <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
-                        Última actualización: Enero 2025
+                        Última actualización: {{ fullDate }}
                     </p>
 
                     <div class="prose prose-lg max-w-none text-gray-700 dark:text-gray-300">

@@ -7,11 +7,18 @@ const props = defineProps({
     songs: Object,
     filters: Object,
     categories: Array,
+    seasonOptions: Array,
 });
+
+
+const seasonMap = Object.fromEntries(
+    props.seasonOptions.map(s => [s.value, s])
+);
 
 const search = ref(props.filters.search || "");
 const filter = ref(props.filters.filter || "all");
 const category = ref(props.filters.category || "");
+const season = ref(props.filters.season || "");
 
 const searchSongs = () => {
     router.get(
@@ -20,6 +27,7 @@ const searchSongs = () => {
             search: search.value,
             filter: filter.value,
             category: category.value,
+            season: season.value,
         },
         {
             preserveState: true,
@@ -32,6 +40,7 @@ const clearSearch = () => {
     search.value = "";
     filter.value = "all";
     category.value = "";
+    season.value = "";
     router.get("/admin/songs");
 };
 
@@ -56,6 +65,11 @@ watch(filter, () => {
 watch(category, () => {
     searchSongs();
 });
+
+watch(season, ()=> {
+    searchSongs();
+});
+
 
 const deleteSong = (id, title) => {
     if (confirm(`¿Estás seguro de eliminar "${title}"?`)) {
@@ -148,7 +162,7 @@ const formatDate = (dateString) => {
                     <div class="card-body p-4">
                         <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
                             <!-- Buscador (6 columnas en desktop) -->
-                            <div class="lg:col-span-6">
+                            <div class="lg:col-span-4">
                                 <div class="join w-full">
                                     <input
                                         v-model="search"
@@ -197,6 +211,24 @@ const formatDate = (dateString) => {
                                         :value="cat.id"
                                     >
                                         {{ cat.name }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- Filtro por Season (2 columnas en desktop)-->
+                            <div class="lg:col-span-2">
+                                <select
+                                    name="category"
+                                    class="select select-bordered w-full"
+                                    v-model="season"
+                                >
+                                    <option value="">Todos los tiempos</option>
+                                    <option
+                                        v-for="seasonOption in seasonOptions"
+                                        :key="seasonOption.value"
+                                        :value="seasonOption.value"
+                                    >
+                                        {{ seasonOption.label }}
                                     </option>
                                 </select>
                             </div>
@@ -326,6 +358,7 @@ const formatDate = (dateString) => {
                                     <tr>
                                         <th>Canción</th>
                                         <th>Categorías</th>
+                                        <th>Tiempo Litúrgico</th>
                                         <th>Info Musical</th>
                                         <th>Extras</th>
                                         <th>Fecha</th>
@@ -387,6 +420,21 @@ const formatDate = (dateString) => {
                                                     class="text-sm opacity-50"
                                                 >
                                                     Sin categorías
+                                                </span>
+                                            </div>
+                                        </td>
+
+                                        <!-- Tiempo litúrgico -->
+                                        <td>
+                                            <div class="flex flex-wrap gap-1">
+                                                <span
+                                                    v-for="slug in song.seasons ?? ['general']"
+                                                    :key="slug"
+                                                    class="badge badge-outline badge-xs gap-1"
+                                                >
+                                                    <span class="w-2 h-2 rounded-full"
+                                                        :style="{ backgroundColor: seasonMap[slug]?.color }"></span>
+                                                    {{ seasonMap[slug]?.label ?? slug }}
                                                 </span>
                                             </div>
                                         </td>

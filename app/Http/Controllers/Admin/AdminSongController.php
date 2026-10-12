@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\LiturgicalSeason;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Song;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -16,6 +18,7 @@ class AdminSongController extends Controller
         $search = $request->input('search');
         $filter = $request->input('filter', 'all');
         $categoryId = $request->input('category');
+        $season = $request->input('season');
 
         $songs = Song::query()
             ->with('categories:id,name')
@@ -27,6 +30,7 @@ class AdminSongController extends Controller
                     $q->where('categories.id', $categoryId);
                 });
             })
+            ->when($season, fn ($query, $season) => $query->whereJsonContains('seasons', $season))
             ->when($filter === 'recent', function ($query) {
                 $query->orderBy('created_at', 'desc');
             }, function ($query) {
@@ -40,10 +44,12 @@ class AdminSongController extends Controller
         return Inertia::render('Admin/Songs/Index', [
             'songs' => $songs,
             'categories' => $categories,
+            'seasonOptions' => LiturgicalSeason::options(),
             'filters' => [
                 'search' => $search,
                 'filter' => $filter,
                 'category' => $categoryId,
+                'season' => $season
             ],
         ]);
     }
@@ -54,6 +60,7 @@ class AdminSongController extends Controller
 
         return Inertia::render('Admin/Songs/Create', [
             'categories' => $categories,
+            'seasonOptions' => LiturgicalSeason::options(),
         ]);
     }
 
@@ -71,6 +78,8 @@ class AdminSongController extends Controller
             'rhythm' => 'nullable|string|max:150',
             'tempo' => 'nullable|integer|min:20|max:240',
             'video_url' => 'nullable|url|max:500',
+            'seasons' => 'nullable|array',
+            'seasons.*' => [Rule::enum(LiturgicalSeason::class), 'distinct'],
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
         ], [
@@ -107,6 +116,7 @@ class AdminSongController extends Controller
         return Inertia::render('Admin/Songs/Edit', [
             'song' => $song,
             'categories' => $categories,
+            'seasonOptions' => LiturgicalSeason::options(),
         ]);
     }
 
@@ -124,6 +134,8 @@ class AdminSongController extends Controller
             'rhythm' => 'nullable|string|max:150',
             'tempo' => 'nullable|integer|min:20|max:240',
             'video_url' => 'nullable|url|max:500',
+            'seasons' => 'nullable|array',
+            'seasons.*' => [Rule::enum(LiturgicalSeason::class), 'distinct'],
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
         ], [

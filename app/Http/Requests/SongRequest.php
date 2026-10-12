@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\LiturgicalSeason;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SongRequest extends FormRequest
 {
@@ -27,6 +29,8 @@ class SongRequest extends FormRequest
             'rhythm' => 'nullable|string|max:150',
             'tempo' => 'nullable|integer|min:20|max:240',
             'video_url' => 'nullable|url|max:500',
+            'seasons' => 'nullable|array',
+            'seasons.*' => [Rule::enum(LiturgicalSeason::class), 'distinct'],
             'categories' => 'nullable|array',
             'categories.*' => 'exists:categories,id',
         ];
