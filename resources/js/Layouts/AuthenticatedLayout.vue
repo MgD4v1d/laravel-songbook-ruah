@@ -51,6 +51,9 @@ const showingNavigationDropdown = ref(false);
                                 <NavLink :href="route('admin.songs.index')" :active="route().current('admin.songs.*')">
                                     Canciones
                                 </NavLink>
+                                <NavLink :href="route('admin.rosters.index')" :active="route().current('admin.rosters.*')">
+                                    Rol de misas
+                                </NavLink>
                             </div>
                         </div>
 
@@ -160,6 +163,9 @@ const showingNavigationDropdown = ref(false);
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('admin.songs.index')" :active="route().current('admin.songs.*')">
                             Canciones
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('admin.rosters.index')" :active="route().current('admin.rosters.*')">
+                            Rol de misas
                         </ResponsiveNavLink>
                     </div>
 

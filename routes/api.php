@@ -2,10 +2,11 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\RosterController;
 use App\Http\Controllers\Api\SongController;
 use App\Http\Controllers\Api\StatsController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\TelegramSongController;
+use Illuminate\Support\Facades\Route;
 
 // Ruta pública de login
 Route::post('/auth/login', [AuthController::class, 'login'])
@@ -32,6 +33,8 @@ Route::middleware('api.key')->group(function(){
         Route::get('/stats', [SongController::class, 'stats']);
         Route::get('/{song}', [SongController::class, 'show']);
     });
+
+    Route::get('/roster', [RosterController::class, 'index']);
 
 });
 

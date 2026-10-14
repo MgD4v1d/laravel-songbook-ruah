@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminRosterController;
 use App\Http\Controllers\Admin\AdminSongController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\DeleteAccountController;
@@ -48,6 +49,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('songs', AdminSongController::class);
     // Rutas de categorías (admin)
     Route::resource('categories', AdminCategoryController::class);
+
+    Route::resource('rosters', AdminRosterController::class)->except(['show']);
+    Route::post('rosters/{roster}/publish', [AdminRosterController::class, 'publish'])->name('rosters.publish');
+    Route::get('rosters/{roster}/source', [AdminRosterController::class, 'source'])->name('rosters.source');
 
 });
 
