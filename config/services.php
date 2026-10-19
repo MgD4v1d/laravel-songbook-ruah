@@ -45,4 +45,8 @@ return [
         'timezone' => env('ROSTER_TIMEZONE', 'America/Merida'),
     ],
 
+    'firebase' => [
+        'project_id' => env('FIREBASE_PROJECT_ID'),
+    ],
+
 ];
