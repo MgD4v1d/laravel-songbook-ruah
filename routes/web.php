@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AdminCategoryController;
+use App\Http\Controllers\Admin\AdminMemberController;
 use App\Http\Controllers\Admin\AdminRosterController;
 use App\Http\Controllers\Admin\AdminSongController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -53,6 +54,10 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('rosters', AdminRosterController::class)->except(['show']);
     Route::post('rosters/{roster}/publish', [AdminRosterController::class, 'publish'])->name('rosters.publish');
     Route::get('rosters/{roster}/source', [AdminRosterController::class, 'source'])->name('rosters.source');
+
+
+    // Rutas de miembros (admin)
+    Route::resource('members', AdminMemberController::class)->only(['index', 'store', 'update', 'destroy']);
 
 });
 

@@ -34,7 +34,7 @@ Route::middleware('api.key')->group(function(){
         Route::get('/{song}', [SongController::class, 'show']);
     });
 
-    Route::get('/roster', [RosterController::class, 'index']);
+    Route::get('/roster', [RosterController::class, 'index'])->middleware('choir.member');
 
 });
 

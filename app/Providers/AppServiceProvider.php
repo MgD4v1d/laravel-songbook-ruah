@@ -9,6 +9,7 @@ use App\Observers\SongObserver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Kreait\Firebase\JWT\IdTokenVerifier;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -17,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(IdTokenVerifier::class, fn () =>
+            IdTokenVerifier::createWithProjectId(config('services.firebase.project_id'))
+        );
     }
 
     /**

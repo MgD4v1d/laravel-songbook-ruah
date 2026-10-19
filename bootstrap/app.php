@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.key' => \App\Http\Middleware\CheckApiKey::class,
             'bot.api.key' => \App\Http\Middleware\CheckBotApi::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'choir.member' => \App\Http\Middleware\EnsureChoirMember::class,
         ]);
         
     })
