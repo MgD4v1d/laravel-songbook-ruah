@@ -2,44 +2,28 @@
   <div class="lyrics-blocks-editor">
     <!-- Toolbar para agregar bloques -->
     <div class="bg-base-200 p-4 rounded-lg mb-4 flex flex-wrap gap-2">
-      <button 
-        @click="addBlock('verse')" 
-        class="btn btn-primary btn-sm gap-2"
+      <button
+        v-for="(t, type) in BLOCK_TYPES"
+        :key="type"
         type="button"
+        @click="addBlock(type)"
+        :class="['btn btn-sm gap-2', t.btn]"
       >
-        <i class="ri-file-text-line"></i>
-        Agregar Estrofa
-      </button>
-      <button 
-        @click="addBlock('chorus')" 
-        class="btn btn-warning btn-sm gap-2"
-        type="button"
-      >
-        <i class="ri-music-2-line"></i>
-        Agregar Coro
-      </button>
-      <button 
-        @click="addBlock('bridge')" 
-        class="btn btn-success btn-sm gap-2"
-        type="button"
-      >
-        <i class="ri-link"></i>
-        Agregar Puente
+        <i :class="t.icon"></i> Agregar {{ t.label }}
       </button>
     </div>
 
     <!-- Lista de bloques editables con drag & drop -->
     <draggable 
-      v-model="localBlocks" 
+      v-model="blocks" 
       item-key="id"
       handle=".drag-handle"
-      @end="emitUpdate"
       class="space-y-4"
     >
       <template #item="{ element: block, index }">
         <div 
           class="card shadow-lg transition-all hover:shadow-xl"
-          :class="getCardClass(block.type)"
+          :class="['border-l-4', BLOCK_TYPES[block.type].card]"
         >
           <div class="card-body p-4">
             <!-- Header del bloque -->
@@ -48,8 +32,8 @@
                 <i class="ri-draggable text-xl opacity-50 hover:opacity-100"></i>
               </span>
               
-              <div :class="getBadgeClass(block.type)">
-                {{ getBlockLabel(block.type) }}
+              <div :class="['badge', BLOCK_TYPES[block.type].badge]">
+                {{ BLOCK_TYPES[block.type].label }}
               </div>
 
               <input 
@@ -57,7 +41,6 @@
                 type="text"
                 class="input input-sm input-bordered flex-1 max-w-xs"
                 placeholder="Etiqueta personalizada..."
-                @input="emitUpdate"
               />
 
               <!-- Botones de formato -->
@@ -93,11 +76,10 @@
             <textarea
               v-model="block.content"
               :ref="el => setTextareaRef(el, block.id)"
-              @input="emitUpdate"
               @keydown="handleKeydown($event, block.id)"
               class="textarea textarea-bordered w-full font-mono text-sm"
-              :class="getTextareaClass(block.type)"
-              :placeholder="getPlaceholder(block.type)"
+              :class="BLOCK_TYPES[block.type].textarea"
+              placeholder="Escribe aquí... Usa **negrita** y _cursiva_"
               rows="4"
             ></textarea>
 
@@ -108,7 +90,7 @@
               </div>
               <div 
                 class="p-3 rounded-lg text-sm leading-relaxed"
-                :class="getPreviewClass(block.type)"
+                :class="['border-l-4', BLOCK_TYPES[block.type].preview]"
                 v-html="renderMarkdown(block.content)"
               ></div>
             </div>
@@ -118,13 +100,13 @@
     </draggable>
 
     <!-- Mensaje si no hay bloques -->
-    <div v-if="localBlocks.length === 0" class="alert alert-info">
+    <div v-if="blocks.length === 0" class="alert alert-info">
       <i class="ri-information-line text-xl"></i>
       <span>No hay bloques aún. Usa los botones de arriba para agregar estrofas, coros o puentes.</span>
     </div>
 
     <!-- Vista previa completa (colapsable) -->
-    <div v-if="localBlocks.length > 0" class="mt-6">
+    <div v-if="blocks.length > 0" class="mt-6">
       <button 
         @click="showFullPreview = !showFullPreview"
         class="btn btn-outline btn-sm gap-2"
@@ -145,13 +127,13 @@
           <div class="divider"></div>
 
           <div 
-            v-for="(block) in localBlocks" 
+            v-for="(block) in blocks" 
             :key="block.id"
             class="mb-4 p-4 rounded-lg"
-            :class="getPreviewClass(block.type)"
+            :class="['border-l-4', BLOCK_TYPES[block.type].preview]"
           >
             <div class="font-bold text-sm mb-2 opacity-80">
-              {{ block.label || getBlockLabel(block.type) }}
+              {{ block.label || BLOCK_TYPES[block.type].label }}
             </div>
             <div 
               class="leading-relaxed"
@@ -165,80 +147,58 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue';
+import { ref, nextTick } from 'vue';
 import draggable from 'vuedraggable';
 
-const props = defineProps({
-  modelValue: {
-    type: Array,
-    default: () => []
-  }
-});
 
-const emit = defineEmits(['update:modelValue']);
-
-// Estado local
-const localBlocks = ref([]);
-const textareaRefs = ref({});
-const showFullPreview = ref(false);
-
-// Watch para cambios externos (immediate reemplaza onMounted)
-watch(() => props.modelValue, (newValue) => {
-  if (JSON.stringify(newValue) !== JSON.stringify(localBlocks.value)) {
-    localBlocks.value = JSON.parse(JSON.stringify(newValue)).map(block => ({
-      ...block,
-      id: block.id || Date.now() + Math.random()
-    }));
-  }
-}, { deep: true, immediate: true });
-
-// Emitir cambios al padre
-const emitUpdate = () => {
-  emit('update:modelValue', JSON.parse(JSON.stringify(localBlocks.value)));
+// Clases completas (no armadas con `${color}`) para que Tailwind las detecte
+const BLOCK_TYPES = {
+  verse:  { label: 'Estrofa', icon: 'ri-file-text-line', btn: 'btn-primary', badge: 'badge-primary', textarea: 'textarea-primary', card: 'border-primary bg-primary/5', preview: 'border-primary bg-primary/10' },
+  chorus: { label: 'Coro',    icon: 'ri-music-2-line',   btn: 'btn-warning', badge: 'badge-warning', textarea: 'textarea-warning', card: 'border-warning bg-warning/5', preview: 'border-warning bg-warning/10' },
+  bridge: { label: 'Puente',  icon: 'ri-link',           btn: 'btn-success', badge: 'badge-success', textarea: 'textarea-success', card: 'border-success bg-success/5', preview: 'border-success bg-success/10' },
 };
+
+const blocks = defineModel({ type: Array, default: () => [] });
+
+const textareaRefs = {};
+const showFullPreview = ref(false);
+const newId = () => Date.now() + Math.random();
+
+// Letras guardadas sin id: draggable necesita uno por bloque
+blocks.value.forEach(b => { b.id ??= newId(); });
+
 
 // Agregar nuevo bloque
 const addBlock = (type) => {
-  const newBlock = {
-    id: Date.now(),
-    type: type,
+  const verses = blocks.value.filter(b => b.type === 'verse').length;
+  const block = {
+    id: newId(),
+    type,
     content: '',
-    label: generateDefaultLabel(type)
+    label: type === 'verse' ? `Estrofa ${verses + 1}` : BLOCK_TYPES[type].label,
   };
-  
-  localBlocks.value.push(newBlock);
-  emitUpdate();
-
-  // Focus en el nuevo textarea
-  nextTick(() => {
-    const textarea = textareaRefs.value[newBlock.id];
-    if (textarea) {
-      textarea.focus();
-    }
-  });
+  blocks.value = [...blocks.value, block];
+  nextTick(() => textareaRefs[block.id]?.focus());
 };
 
 // Eliminar bloque
 const deleteBlock = (index) => {
   if (confirm('¿Estás seguro de eliminar este bloque?')) {
-    localBlocks.value.splice(index, 1);
-    emitUpdate();
+    blocks.value = blocks.value.filter((_, i) => i !== index);
   }
 };
 
 // Guardar referencias a textareas
 const setTextareaRef = (el, blockId) => {
-  if (el) {
-    textareaRefs.value[blockId] = el;
-  }
+  if (el) textareaRefs[blockId] = el;
 };
 
 // Envolver/desenvolver selección con formato (toggle)
 const wrapSelection = (blockId, wrapper) => {
-  const textarea = textareaRefs.value[blockId];
+  const textarea = textareaRefs[blockId];
   if (!textarea) return;
 
-  const block = localBlocks.value.find(b => b.id === blockId);
+  const block = blocks.value.find(b => b.id === blockId);
   if (!block) return;
 
   const start = textarea.selectionStart;
@@ -292,21 +252,13 @@ const wrapSelection = (blockId, wrapper) => {
       textarea.setSelectionRange(start + wLen, start + wLen);
     });
   }
-
-  emitUpdate();
 };
 
 // Atajos de teclado
 const handleKeydown = (event, blockId) => {
-  if (event.ctrlKey && event.key === 'b') {
-    event.preventDefault();
-    wrapSelection(blockId, '**');
-  }
-
-  if (event.ctrlKey && event.key === 'i') {
-    event.preventDefault();
-    wrapSelection(blockId, '_');
-  }
+  if (!(event.ctrlKey || event.metaKey)) return;
+  if (event.key === 'b') { event.preventDefault(); wrapSelection(blockId, '**'); }
+  if (event.key === 'i') { event.preventDefault(); wrapSelection(blockId, '_'); }
 };
 
 // Renderizar markdown
@@ -321,69 +273,6 @@ const renderMarkdown = (text) => {
     .replace(/\*\*([\s\S]*?)\*\*/g, '<strong>$1</strong>')
     .replace(/_([\s\S]*?)_/g, '<em>$1</em>')
     .replace(/\n/g, '<br>');
-};
-
-// Helpers de estilo
-const getCardClass = (type) => {
-  const classes = {
-    verse: 'border-l-4 border-primary bg-primary/5',
-    chorus: 'border-l-4 border-warning bg-warning/5',
-    bridge: 'border-l-4 border-success bg-success/5'
-  };
-  return classes[type] || '';
-};
-
-const getBadgeClass = (type) => {
-  const classes = {
-    verse: 'badge badge-primary',
-    chorus: 'badge badge-warning',
-    bridge: 'badge badge-success'
-  };
-  return classes[type] || 'badge';
-};
-
-const getTextareaClass = (type) => {
-  const classes = {
-    verse: 'textarea-primary',
-    chorus: 'textarea-warning',
-    bridge: 'textarea-success'
-  };
-  return classes[type] || '';
-};
-
-const getPreviewClass = (type) => {
-  const classes = {
-    verse: 'bg-primary/10 border-l-4 border-primary',
-    chorus: 'bg-warning/10 border-l-4 border-warning',
-    bridge: 'bg-success/10 border-l-4 border-success'
-  };
-  return classes[type] || '';
-};
-
-const getBlockLabel = (type) => {
-  const labels = {
-    verse: 'Estrofa',
-    chorus: 'Coro',
-    bridge: 'Puente'
-  };
-  return labels[type] || 'Bloque';
-};
-
-const generateDefaultLabel = (type) => {
-  if (type === 'chorus') return 'Coro';
-  if (type === 'bridge') return 'Puente';
-  
-  const verseCount = localBlocks.value.filter(b => b.type === 'verse').length;
-  return `Estrofa ${verseCount + 1}`;
-};
-
-const getPlaceholder = (type) => {
-  const placeholders = {
-    verse: 'Escribe la estrofa aquí... Usa **negrita** y _cursiva_',
-    chorus: 'Escribe el coro aquí... Usa **negrita** y _cursiva_',
-    bridge: 'Escribe el puente aquí... Usa **negrita** y _cursiva_'
-  };
-  return placeholders[type] || 'Escribe aquí...';
 };
 </script>
 
