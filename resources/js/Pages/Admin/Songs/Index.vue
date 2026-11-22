@@ -1,7 +1,9 @@
 <script setup>
+import Pagination from "@/Components/Pagination.vue";
+import { useFilters } from "@/Composables/useFilters";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
-import { ref, watch } from "vue";
+import { toRefs } from "vue";
 
 const props = defineProps({
     songs: Object,
@@ -15,60 +17,13 @@ const seasonMap = Object.fromEntries(
     props.seasonOptions.map(s => [s.value, s])
 );
 
-const search = ref(props.filters.search || "");
-const filter = ref(props.filters.filter || "all");
-const category = ref(props.filters.category || "");
-const season = ref(props.filters.season || "");
+const {filters, apply: searchSongs, reset: clearSearch, isActive} = useFilters(
+    "/admin/songs",
+    props.filters,
+    {search: "",  filter: "all", category: "", season: ""}
+);
 
-const searchSongs = () => {
-    router.get(
-        "/admin/songs",
-        {
-            search: search.value,
-            filter: filter.value,
-            category: category.value,
-            season: season.value,
-        },
-        {
-            preserveState: true,
-            replace: true,
-        }
-    );
-};
-
-const clearSearch = () => {
-    search.value = "";
-    filter.value = "all";
-    category.value = "";
-    season.value = "";
-    router.get("/admin/songs");
-};
-
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};
-
-const debouncedSearch = debounce(() => searchSongs(), 500);
-
-watch(search, () => {
-    debouncedSearch();
-});
-
-watch(filter, () => {
-    searchSongs();
-});
-
-watch(category, () => {
-    searchSongs();
-});
-
-watch(season, ()=> {
-    searchSongs();
-});
+const { search, filter, category, season } = toRefs(filters);
 
 
 const deleteSong = (id, title) => {
@@ -77,12 +32,6 @@ const deleteSong = (id, title) => {
             preserveScroll: true,
         });
     }
-};
-
-const translateLabel = (label) => {
-    if (label === "pagination.previous") return "&laquo; Anterior";
-    if (label === "pagination.next") return "Siguiente &raquo;";
-    return label;
 };
 
 const goToEdit = (songId) => {
@@ -218,7 +167,7 @@ const formatDate = (dateString) => {
                             <!-- Filtro por Season (2 columnas en desktop)-->
                             <div class="lg:col-span-2">
                                 <select
-                                    name="category"
+                                    name="season"
                                     class="select select-bordered w-full"
                                     v-model="season"
                                 >
@@ -248,7 +197,7 @@ const formatDate = (dateString) => {
                             <!-- Botón limpiar (1 columna)-->
                             <div class="lg:col-span-2 flex justify-end">
                                 <button
-                                    v-if="search || filter !== 'all' || category"
+                                    v-if="isActive"
                                     @click="clearSearch"
                                     class="btn btn-ghost"
                                     title="Limpiar filtros"
@@ -275,7 +224,7 @@ const formatDate = (dateString) => {
                 </div>
 
                 <!-- Alert si hay búsqueda activa -->
-                <div v-if="search || category" class="alert alert-info shadow-lg mb-6">
+                <div v-if="search || category || season" class="alert alert-info shadow-lg mb-6">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         fill="none"
@@ -295,6 +244,7 @@ const formatDate = (dateString) => {
                             <span v-if="search">Búsqueda: "{{ search }}"</span>
                             <span v-if="search && category"> | </span>
                             <span v-if="category">Categoría: {{ categories.find(c => c.id == category)?.name }}</span>
+                            <span v-if="season">Tiempo: {{ seasonMap[season]?.label }}</span>
                         </div>
                     </div>
                 </div>
@@ -616,126 +566,7 @@ const formatDate = (dateString) => {
                                 </div>
 
                                 <!-- Botones de paginación -->
-                                <div class="join">
-                                    <template
-                                        v-for="(link, index) in songs.links"
-                                        :key="index"
-                                    >
-                                        <Link
-                                            v-if="link.url"
-                                            :href="link.url"
-                                            :class="[
-                                                'join-item btn btn-sm',
-                                                link.active ? 'btn-active' : '',
-                                            ]"
-                                            :preserve-state="true"
-                                            :preserve-scroll="true"
-                                        >
-                                            <span
-                                                v-if="
-                                                    link.label ===
-                                                    'pagination.previous'
-                                                "
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-4 w-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M15 19l-7-7 7-7"
-                                                    />
-                                                </svg>
-                                            </span>
-                                            <span
-                                                v-else-if="
-                                                    link.label ===
-                                                    'pagination.next'
-                                                "
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-4 w-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M9 5l7 7-7 7"
-                                                    />
-                                                </svg>
-                                            </span>
-                                            <span
-                                                v-else
-                                                v-html="
-                                                    translateLabel(link.label)
-                                                "
-                                            ></span>
-                                        </Link>
-                                        <button
-                                            v-else
-                                            class="join-item btn btn-sm btn-disabled"
-                                            disabled
-                                        >
-                                            <span
-                                                v-if="
-                                                    link.label ===
-                                                    'pagination.previous'
-                                                "
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-4 w-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M15 19l-7-7 7-7"
-                                                    />
-                                                </svg>
-                                            </span>
-                                            <span
-                                                v-else-if="
-                                                    link.label ===
-                                                    'pagination.next'
-                                                "
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    class="h-4 w-4"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M9 5l7 7-7 7"
-                                                    />
-                                                </svg>
-                                            </span>
-                                            <span
-                                                v-else
-                                                v-html="
-                                                    translateLabel(link.label)
-                                                "
-                                            ></span>
-                                        </button>
-                                    </template>
-                                </div>
+                                <Pagination :links="songs.links" />
                             </div>
                         </div>
                     </div>

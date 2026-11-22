@@ -1,53 +1,25 @@
 <script setup>
+import Pagination from "@/Components/Pagination.vue";
+import { useFilters } from "@/Composables/useFilters";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
-import { ref, watch } from "vue";
+import { toRefs } from "vue";
 
 const props = defineProps({
     categories: Object,
     filters: Object,
 });
 
-const search = ref(props.filters.search || "");
-const filter = ref(props.filters.filter || "all");
 
-const searchCategories = () => {
-    router.get(
-        route("admin.categories.index"),
-        {
-            search: search.value,
-            filter: filter.value,
-        },
-        {
-            preserveState: true,
-            replace: true,
-        }
-    );
-};
 
-const clearSearch = () => {
-    search.value = "";
-    filter.value = "all";
-    router.get(route("admin.categories.index"));
-};
+const {filters, apply:searchCategories, reset:clearSearch, isActive} = useFilters(
+    "/admin/categories",
+    props.filters,
+    {search: "",  filter: "all"}
+);
 
-const debounce = (fn, delay) => {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => fn(...args), delay);
-    };
-};
+const {search, filter} = toRefs(filters)
 
-const debouncedSearch = debounce(() => searchCategories(), 500);
-
-watch(search, () => {
-    debouncedSearch();
-});
-
-watch(filter, () => {
-    searchCategories();
-});
 
 const deleteCategory = (id, name) => {
     if (confirm(`¿Estás seguro de eliminar la categoría "${name}"?`)) {
@@ -55,12 +27,6 @@ const deleteCategory = (id, name) => {
             preserveScroll: true,
         });
     }
-};
-
-const translateLabel = (label) => {
-    if (label === "pagination.previous") return "&laquo; Anterior";
-    if (label === "pagination.next") return "Siguiente &raquo;";
-    return label;
 };
 
 const formatDate = (dateString) => {
@@ -155,7 +121,7 @@ const formatDate = (dateString) => {
                             <!-- Botón limpiar (1 columna)-->
                             <div class="lg:col-span-1">
                                 <button
-                                    v-if="search || filter !== 'all'"
+                                    v-if="isActive"
                                     @click="clearSearch"
                                     class="btn btn-ghost w-full"
                                     title="Limpiar filtros"
@@ -356,28 +322,7 @@ const formatDate = (dateString) => {
                                         categories.total
                                     }}</span>
                                 </div>
-                                <div class="join">
-                                    <template
-                                        v-for="(link, index) in categories.links"
-                                        :key="index"
-                                    >
-                                        <Link
-                                            v-if="link.url"
-                                            :href="link.url"
-                                            class="join-item btn btn-sm"
-                                            :class="{
-                                                'btn-active': link.active,
-                                            }"
-                                            v-html="translateLabel(link.label)"
-                                        ></Link>
-                                        <button
-                                            v-else
-                                            class="join-item btn btn-sm btn-disabled"
-                                            disabled
-                                            v-html="translateLabel(link.label)"
-                                        ></button>
-                                    </template>
-                                </div>
+                                <Pagination  :links="categories.links" />
                             </div>
                         </div>
                     </div>
