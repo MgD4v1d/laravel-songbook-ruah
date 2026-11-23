@@ -20,7 +20,7 @@
       handle=".drag-handle"
       class="space-y-4"
     >
-      <template #item="{ element: block, index }">
+      <template #item="{ element: block, index }: { element: LyricsBlock; index: number }">
         <div 
           class="card shadow-lg transition-all hover:shadow-xl"
           :class="['border-l-4', BLOCK_TYPES[block.type].card]"
@@ -146,21 +146,36 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, nextTick } from 'vue';
 import draggable from 'vuedraggable';
+import type { BlockType, LyricsBlock } from '@/types/song';
+import { useConfirm } from '@/Composables/useConfirm';
+
+const { confirm } = useConfirm();
+
+interface BlockStyle {
+  label: string;
+  icon: string;
+  btn: string;
+  badge: string;
+  textarea: string;
+  card: string;
+  preview: string;
+}
 
 
 // Clases completas (no armadas con `${color}`) para que Tailwind las detecte
-const BLOCK_TYPES = {
+const BLOCK_TYPES: Record<BlockType, BlockStyle> = {
   verse:  { label: 'Estrofa', icon: 'ri-file-text-line', btn: 'btn-primary', badge: 'badge-primary', textarea: 'textarea-primary', card: 'border-primary bg-primary/5', preview: 'border-primary bg-primary/10' },
   chorus: { label: 'Coro',    icon: 'ri-music-2-line',   btn: 'btn-warning', badge: 'badge-warning', textarea: 'textarea-warning', card: 'border-warning bg-warning/5', preview: 'border-warning bg-warning/10' },
   bridge: { label: 'Puente',  icon: 'ri-link',           btn: 'btn-success', badge: 'badge-success', textarea: 'textarea-success', card: 'border-success bg-success/5', preview: 'border-success bg-success/10' },
 };
 
-const blocks = defineModel({ type: Array, default: () => [] });
+const blocks = defineModel<LyricsBlock[]>({ default: () => [] });
 
-const textareaRefs = {};
+const textareaRefs: Record<number, HTMLTextAreaElement> = {};
+
 const showFullPreview = ref(false);
 const newId = () => Date.now() + Math.random();
 
@@ -169,9 +184,9 @@ blocks.value.forEach(b => { b.id ??= newId(); });
 
 
 // Agregar nuevo bloque
-const addBlock = (type) => {
+const addBlock = (type: BlockType) => {
   const verses = blocks.value.filter(b => b.type === 'verse').length;
-  const block = {
+  const block: LyricsBlock = {
     id: newId(),
     type,
     content: '',
@@ -182,19 +197,19 @@ const addBlock = (type) => {
 };
 
 // Eliminar bloque
-const deleteBlock = (index) => {
-  if (confirm('¿Estás seguro de eliminar este bloque?')) {
+const deleteBlock = async (index: number) => {
+  if (await confirm({ message: 'Se eliminará este bloque de la letra.', confirmText: 'Eliminar', danger: true })) {
     blocks.value = blocks.value.filter((_, i) => i !== index);
   }
 };
 
 // Guardar referencias a textareas
-const setTextareaRef = (el, blockId) => {
-  if (el) textareaRefs[blockId] = el;
+const setTextareaRef = (el: unknown, blockId: number) => {
+  if (el instanceof HTMLTextAreaElement) textareaRefs[blockId] = el;
 };
 
 // Envolver/desenvolver selección con formato (toggle)
-const wrapSelection = (blockId, wrapper) => {
+const wrapSelection = (blockId: number, wrapper: '**' | '_') => {
   const textarea = textareaRefs[blockId];
   if (!textarea) return;
 
@@ -255,14 +270,14 @@ const wrapSelection = (blockId, wrapper) => {
 };
 
 // Atajos de teclado
-const handleKeydown = (event, blockId) => {
+const handleKeydown = (event: KeyboardEvent, blockId: number) => {
   if (!(event.ctrlKey || event.metaKey)) return;
   if (event.key === 'b') { event.preventDefault(); wrapSelection(blockId, '**'); }
   if (event.key === 'i') { event.preventDefault(); wrapSelection(blockId, '_'); }
 };
 
 // Renderizar markdown
-const renderMarkdown = (text) => {
+const renderMarkdown = (text: string) => {
   if (!text) return '';
 
   return text

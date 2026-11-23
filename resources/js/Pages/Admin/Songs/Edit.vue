@@ -3,6 +3,9 @@ import SongForm from '@/Components/SongForm.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import {Head, Link, useForm, router} from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
+import { useConfirm } from '@/Composables/useConfirm';
+
+const { confirm } = useConfirm();
 
 const {song, categories, seasonOptions} = defineProps({
     song: Object,
@@ -23,6 +26,7 @@ const form = useForm({
 });
 
 
+
 const returnUrl = ref(null);
 
 onMounted(() => {
@@ -40,8 +44,8 @@ const submit = () => {
     });
 };
 
-const deleteSong = () => {
-    if (confirm('¿Estás seguro de eliminar esta canción?')) {
+const deleteSong = async () => {
+    if (await confirm({ message: `Se eliminará "${song.title}".`, confirmText: 'Eliminar', danger: true })) {
         router.delete(route('admin.songs.destroy', song.id), {
             onSuccess: () => {
                 if (returnUrl.value) {

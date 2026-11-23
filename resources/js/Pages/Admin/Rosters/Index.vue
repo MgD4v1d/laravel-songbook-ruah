@@ -2,6 +2,9 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { computed } from "vue";
+import { useConfirm } from "@/Composables/useConfirm";
+
+const { confirm } = useConfirm();
 
 defineProps({
     rosters: Array,
@@ -14,14 +17,14 @@ const goToEdit = (rosterId) => {
     router.visit(route("admin.rosters.edit", rosterId));
 };
 
-const publishRoster = (id) => {
-    if (confirm("¿Publicar este rol? Quedará visible en la app.")) {
+const publishRoster = async (id) => {
+    if (await confirm({ title: "¿Publicar este rol?", message: "Quedará visible en la app.", confirmText: "Publicar" })) {
         router.post(route("admin.rosters.publish", id), {}, { preserveScroll: true });
     }
 };
 
-const deleteRoster = (id) => {
-    if (confirm("¿Estás seguro de eliminar este rol? También se quitará de la app.")) {
+const deleteRoster = async (id) => {
+    if (await confirm({ message: "Se eliminará este rol. También se quitará de la app.", confirmText: "Eliminar", danger: true })) {
         router.delete(`/admin/rosters/${id}`, {
             preserveScroll: true,
         });

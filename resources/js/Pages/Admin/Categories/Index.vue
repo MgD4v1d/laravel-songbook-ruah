@@ -4,6 +4,9 @@ import { useFilters } from "@/Composables/useFilters";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
 import { toRefs } from "vue";
+import { useConfirm } from "@/Composables/useConfirm";
+
+const { confirm } = useConfirm();
 
 const props = defineProps({
     categories: Object,
@@ -21,8 +24,8 @@ const {filters, apply:searchCategories, reset:clearSearch, isActive} = useFilter
 const {search, filter} = toRefs(filters)
 
 
-const deleteCategory = (id, name) => {
-    if (confirm(`¿Estás seguro de eliminar la categoría "${name}"?`)) {
+const deleteCategory = async (id, name) => {
+    if (await confirm({ message: `Se eliminará la categoría "${name}".`, confirmText: "Eliminar", danger: true })) {
         router.delete(route("admin.categories.destroy", id), {
             preserveScroll: true,
         });

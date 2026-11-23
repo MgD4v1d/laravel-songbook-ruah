@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
+import { useConfirm } from '@/Composables/useConfirm';
+
+const { confirm } = useConfirm();
 
 const props = defineProps({
     roster: Object,
@@ -65,12 +68,12 @@ const save = () => {
     });
 };
 
-const publish = () => {
+const publish = async () => {
     if (form.isDirty) {
         alert('Tienes cambios sin guardar. Guárdalos antes de publicar.');
         return;
     }
-    if (confirm('¿Publicar este rol? Quedará visible en la app.')) {
+    if (await confirm({ title: '¿Publicar este rol?', message: 'Quedará visible en la app.', confirmText: 'Publicar' })) {
         router.post(route('admin.rosters.publish', props.roster.id));
     }
 };

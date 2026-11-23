@@ -1,5 +1,6 @@
 <script setup>
 import Pagination from "@/Components/Pagination.vue";
+import { useConfirm } from "@/Composables/useConfirm";
 import { useFilters } from "@/Composables/useFilters";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link, router } from "@inertiajs/vue3";
@@ -11,6 +12,8 @@ const props = defineProps({
     categories: Array,
     seasonOptions: Array,
 });
+
+const { confirm } = useConfirm();
 
 
 const seasonMap = Object.fromEntries(
@@ -26,11 +29,9 @@ const {filters, apply: searchSongs, reset: clearSearch, isActive} = useFilters(
 const { search, filter, category, season } = toRefs(filters);
 
 
-const deleteSong = (id, title) => {
-    if (confirm(`¿Estás seguro de eliminar "${title}"?`)) {
-        router.delete(`/admin/songs/${id}`, {
-            preserveScroll: true,
-        });
+const deleteSong = async (id, title) => {
+    if (await confirm({ message: `Se eliminará "${title}".`, confirmText: "Eliminar", danger: true })) {
+        router.delete(`/admin/songs/${id}`, { preserveScroll: true, });
     }
 };
 
