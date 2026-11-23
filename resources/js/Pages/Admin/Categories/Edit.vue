@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
+import { useConfirm } from '@/Composables/useConfirm';
+
+const { confirm } = useConfirm();
 
 const { category } = defineProps({
     category: Object
@@ -19,6 +22,18 @@ const returnUrl = ref(null);
 onMounted(() => {
     returnUrl.value = localStorage.getItem('categories_return_url');
 });
+
+const deleteCategory = async () => {
+    if (!(await confirm({ message: `Se eliminará la categoría "${category.name}".`, confirmText: 'Eliminar', danger: true }))) return;
+    router.delete(route('admin.categories.destroy', category.id), {
+        onSuccess: () => {
+            if (returnUrl.value) {
+                localStorage.removeItem('categories_return_url');
+                router.visit(returnUrl.value);
+            }
+        }
+    });
+};
 
 // Generar slug automáticamente desde el nombre
 const generateSlug = () => {
@@ -185,15 +200,7 @@ const goBack = () => {
                                 <div class="flex justify-between items-center">
                                     <button
                                         type="button"
-                                        @click="$inertia.delete(route('admin.categories.destroy', category.id), {
-                                            onBefore: () => confirm('¿Estás seguro de eliminar esta categoría?'),
-                                            onSuccess: () => {
-                                                if (returnUrl.value) {
-                                                    localStorage.removeItem('categories_return_url');
-                                                    router.visit(returnUrl.value);
-                                                }
-                                            }
-                                        })"
+                                        @click="deleteCategory"
                                         class="btn btn-error gap-2">
                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

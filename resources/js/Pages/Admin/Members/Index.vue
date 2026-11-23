@@ -2,6 +2,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, router, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { useConfirm } from '@/Composables/useConfirm';
+
+const { confirm } = useConfirm();
 
 const props = defineProps({
     members: Array,
@@ -29,8 +32,8 @@ const toggleActive = (member) => {
     );
 };
 
-const deleteMember = (member) => {
-    if (confirm(`¿Eliminar a ${member.name}? Si solo dejó el coro, mejor desactívalo.`)) {
+const deleteMember = async (member) => {
+    if (await confirm({ title: `¿Eliminar a ${member.name}?`, message: 'Si solo dejó el coro, mejor desactívalo.', confirmText: 'Eliminar', danger: true })) {
         router.delete(route('admin.members.destroy', member.id), { preserveScroll: true });
     }
 };
